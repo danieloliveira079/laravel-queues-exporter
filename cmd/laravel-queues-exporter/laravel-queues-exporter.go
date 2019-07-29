@@ -22,6 +22,7 @@ func main() {
 		config.checkInterval,
 		config.queuesNames,
 		nil,
+		nil,
 	)
 
 	exporter.Scan()

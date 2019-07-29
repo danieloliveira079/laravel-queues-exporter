@@ -17,6 +17,7 @@ type RedisExporter struct {
 	targetPort    string
 	targetDB      int
 	extractor     Extractor
+	connector     Connector
 	interrupt     bool
 	checkInterval int
 	queuesNames   string
@@ -29,8 +30,6 @@ type QueueItem struct {
 }
 
 type Extractor interface {
-	Connect() error
-	Close() error
 	ListQueues() ([]QueueItem, error)
 	CountJobsForQueue(queue *QueueItem) error
 }
@@ -40,10 +39,15 @@ func NewRedisExporter(targetHost string,
 	targetDB int,
 	checkInterval int,
 	queueNames string,
-	extractor Extractor) *RedisExporter {
+	extractor Extractor,
+	connector Connector) *RedisExporter {
+
+	if connector == nil {
+		connector = NewRedisConnector(targetHost, targetPort, targetDB)
+	}
 
 	if extractor == nil {
-		extractor = NewRedisExtractor(targetHost, targetPort, targetDB)
+		extractor = NewRedisExtractor(targetHost, targetPort, targetDB, connector)
 	}
 
 	return &RedisExporter{targetHost: targetHost,
@@ -52,23 +56,22 @@ func NewRedisExporter(targetHost string,
 		checkInterval: checkInterval,
 		queuesNames:   queueNames,
 		extractor:     extractor,
+		connector:     connector,
 	}
 }
 
 func (r *RedisExporter) Stop(done chan os.Signal) {
 	log.Println("Stopping exporter")
 	r.interrupt = true
-	_ = r.extractor.Close()
+	err := r.connector.Close()
+	if err != nil {
+		log.Println("error closing connector:", err)
+	}
 	log.Println("Exporter stopped")
 	close(done)
 }
 
 func (r *RedisExporter) Scan() {
-	err := r.extractor.Connect()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	ticker := time.NewTicker(time.Duration(r.checkInterval) * time.Second)
 	go func() {
 		defer ticker.Stop()
@@ -76,6 +79,7 @@ func (r *RedisExporter) Scan() {
 
 		for _ = range ticker.C {
 			if r.interrupt == true {
+				log.Println("Stopping scanner")
 				ticker.Stop()
 				break
 			}
@@ -90,6 +94,7 @@ func (r *RedisExporter) Scan() {
 				err = r.extractor.CountJobsForQueue(&queue)
 				if err != nil {
 					log.Println(fmt.Sprintf("error getting metrics for %s: %v", queue.Name, err))
+					continue
 				}
 
 				log.Println(strings.Replace(queue.Name, fmt.Sprintf("%s:", QUEUE_ROOT_NODE), "", 1), queue.Jobs)
