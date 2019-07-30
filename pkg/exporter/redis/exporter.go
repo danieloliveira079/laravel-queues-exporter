@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,16 +13,18 @@ const (
 	QUEUE_ROOT_NODE = "queues"
 )
 
-type RedisExporter struct {
-	targetHost    string
-	targetPort    string
-	targetDB      int
-	extractor     Extractor
-	connector     Connector
-	interrupt     bool
-	checkInterval int
-	queuesNames   string
-	queueItems    []QueueItem
+type Exporter struct {
+	Config     RedisExporterConfig
+	interrupt  bool
+	queueItems []QueueItem
+}
+
+type RedisExporterConfig struct {
+	ConnectionConfig ConnectionConfig
+	CheckInterval    int
+	QueueNames       string
+	Extractor        Extractor
+	Connector        Connector
 }
 
 type QueueItem struct {
@@ -30,40 +33,34 @@ type QueueItem struct {
 }
 
 type Extractor interface {
-	ListQueues() ([]QueueItem, error)
+	ListAllQueues() ([]QueueItem, error)
 	CountJobsForQueue(queue *QueueItem) error
 }
 
-func NewRedisExporter(targetHost string,
-	targetPort string,
-	targetDB int,
-	checkInterval int,
-	queueNames string,
-	extractor Extractor,
-	connector Connector) *RedisExporter {
-
-	if connector == nil {
-		connector = NewRedisConnector(targetHost, targetPort, targetDB)
-	}
-
-	if extractor == nil {
-		extractor = NewRedisExtractor(targetHost, targetPort, targetDB, connector)
-	}
-
-	return &RedisExporter{targetHost: targetHost,
-		targetPort:    targetPort,
-		targetDB:      targetDB,
-		checkInterval: checkInterval,
-		queuesNames:   queueNames,
-		extractor:     extractor,
-		connector:     connector,
-	}
+type Connector interface {
+	Connect() (err error)
+	Close() (err error)
+	Do(command string, args ...interface{}) (results interface{}, err error)
 }
 
-func (r *RedisExporter) Stop(done chan os.Signal) {
+func NewRedisExporter(config RedisExporterConfig) (*Exporter, error) {
+	if config.Connector == nil {
+		return nil, errors.New("connector can't be nil")
+	}
+
+	if config.Extractor == nil {
+		return nil, errors.New("extractor can't be nil")
+	}
+
+	return &Exporter{
+		Config: config,
+	}, nil
+}
+
+func (r *Exporter) Stop(done chan os.Signal) {
 	log.Println("Stopping exporter")
 	r.interrupt = true
-	err := r.connector.Close()
+	err := r.CloseConnector()
 	if err != nil {
 		log.Println("error closing connector:", err)
 	}
@@ -71,8 +68,16 @@ func (r *RedisExporter) Stop(done chan os.Signal) {
 	close(done)
 }
 
-func (r *RedisExporter) Scan() {
-	ticker := time.NewTicker(time.Duration(r.checkInterval) * time.Second)
+func (r *Exporter) CloseConnector() error {
+	return r.Connector().Close()
+}
+
+func (r *Exporter) Connector() Connector {
+	return r.Config.Connector
+}
+
+func (r *Exporter) Scan() {
+	ticker := time.NewTicker(time.Duration(r.Config.CheckInterval) * time.Second)
 	go func() {
 		defer ticker.Stop()
 		log.Println("Starting scanner")
@@ -91,7 +96,7 @@ func (r *RedisExporter) Scan() {
 			}
 
 			for _, queue := range queues {
-				err = r.extractor.CountJobsForQueue(&queue)
+				err = r.CountJobsForQueue(&queue)
 				if err != nil {
 					log.Println(fmt.Sprintf("error getting metrics for %s: %v", queue.Name, err))
 					continue
@@ -103,19 +108,30 @@ func (r *RedisExporter) Scan() {
 	}()
 }
 
-func (r *RedisExporter) SelectQueuesToScan() (queueItems []QueueItem, err error) {
+func (r *Exporter) CountJobsForQueue(queue *QueueItem) error {
+	return r.Extractor().CountJobsForQueue(queue)
+}
 
-	if len(r.queuesNames) > 0 {
-		queueItems = parseQueueNames(r.queuesNames)
+func (r *Exporter) SelectQueuesToScan() ([]QueueItem, error) {
+
+	var err error
+	queueItems := []QueueItem{}
+
+	if len(r.Config.QueueNames) > 0 {
+		queueItems = parseQueueNames(r.Config.QueueNames)
 	} else {
-		queueItems, err = r.extractor.ListQueues()
+		queueItems, err = r.Extractor().ListAllQueues()
 	}
 
 	return queueItems, err
 }
 
-func parseQueueNames(queueNames string) (queueItems []QueueItem) {
+func (r *Exporter) Extractor() Extractor {
+	return r.Config.Extractor
+}
 
+func parseQueueNames(queueNames string) []QueueItem {
+	queueItems := []QueueItem{}
 	names := strings.Split(queueNames, ",")
 	for _, n := range names {
 		queueItems = append(queueItems, QueueItem{Name: n})

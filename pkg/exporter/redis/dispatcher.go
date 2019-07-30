@@ -1,22 +1,19 @@
 package redis
 
+import "errors"
+
 type RedisCommandDispatcher struct {
 	connector Connector
 }
 
-type Connector interface {
-	Connect() (err error)
-	Close() (err error)
-	Do(command string, args ...interface{}) (results interface{}, err error)
-}
-
-func NewRedisCommandDispatcher(connector Connector) *RedisCommandDispatcher {
-	if connector != nil {
-		return &RedisCommandDispatcher{connector: connector}
+func NewRedisCommandDispatcher(connector Connector) (*RedisCommandDispatcher, error) {
+	if connector == nil {
+		return nil, errors.New("connector can't be nil")
 	}
-	return nil
+
+	return &RedisCommandDispatcher{connector: connector}, nil
 }
 
 func (d *RedisCommandDispatcher) Do(command string, args ...interface{}) (results interface{}, err error) {
-	return d.connector.Do(command, args)
+	return d.connector.Do(command, args...)
 }

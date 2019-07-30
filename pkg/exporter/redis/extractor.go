@@ -1,28 +1,37 @@
 package redis
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"strings"
 )
 
 type RedisExtractor struct {
-	targetHost string
-	targetPort string
-	targetDB   int
-	dispatcher CommandDispatcher
+	Config ExtractorConfig
+}
+
+type ExtractorConfig struct {
+	ConnConfig ConnectionConfig
+	Dispatcher CommandDispatcher
 }
 
 type CommandDispatcher interface {
 	Do(command string, args ...interface{}) (reply interface{}, err error)
 }
 
-func NewRedisExtractor(targetHost string, targetPort string, targetDB int, dispatcher CommandDispatcher) *RedisExtractor {
-	return &RedisExtractor{targetHost: targetHost, targetPort: targetPort, targetDB: targetDB, dispatcher: dispatcher}
+func NewRedisExtractor(config ExtractorConfig) (*RedisExtractor, error) {
+	if config.Dispatcher == nil {
+		return nil, errors.New("dispatcher can't be nil")
+	}
+	return &RedisExtractor{Config: config}, nil
 }
 
-func (re *RedisExtractor) ListQueues() (queueItems []QueueItem, err error) {
-	list, err := re.dispatcher.Do("KEYS", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
+func (re *RedisExtractor) ListAllQueues() ([]QueueItem, error) {
+	var err error
+	queueItems := []QueueItem{}
+
+	list, err := re.Dispatcher().Do("KEYS", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
 
 	if err != nil {
 		return nil, err
@@ -42,6 +51,10 @@ func (re *RedisExtractor) ListQueues() (queueItems []QueueItem, err error) {
 	return queueItems, err
 }
 
+func (re *RedisExtractor) Dispatcher() CommandDispatcher {
+	return re.Config.Dispatcher
+}
+
 func checkQueueName(name string) string {
 	parts := strings.Split(name, ":")
 
@@ -56,9 +69,9 @@ func checkQueueName(name string) string {
 	return name
 }
 
-func (re *RedisExtractor) CountJobsForQueue(queue *QueueItem) (err error) {
+func (re *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
 	name := checkQueueName(queue.Name)
-	queueType, err := redis.String(re.dispatcher.Do("type", name))
+	queueType, err := redis.String(re.Dispatcher().Do("type", name))
 
 	if err != nil {
 		return err
@@ -76,7 +89,7 @@ func (re *RedisExtractor) CountJobsForQueue(queue *QueueItem) (err error) {
 		redisCmd = "llen"
 	}
 
-	jobsCount, err = redis.Int64(re.dispatcher.Do(redisCmd, name))
+	jobsCount, err = redis.Int64(re.Dispatcher().Do(redisCmd, name))
 	if err != nil {
 		return err
 	}
