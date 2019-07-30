@@ -8,14 +8,16 @@ import (
 )
 
 type RedisConnector struct {
-	targetHost string
-	targetPort string
-	targetDB   int
-	conn       redis.Conn
+	Config ConnectorConfig
+	conn   redis.Conn
 }
 
-func NewRedisConnector(targetHost string, targetPort string, targetDB int) *RedisConnector {
-	return &RedisConnector{targetHost: targetHost, targetPort: targetPort, targetDB: targetDB}
+type ConnectorConfig struct {
+	ConnConfig ConnectionConfig
+}
+
+func NewRedisConnector(config ConnectorConfig) (*RedisConnector, error) {
+	return &RedisConnector{Config: config}, nil
 }
 
 func (c *RedisConnector) Connect() (err error) {
@@ -23,7 +25,7 @@ func (c *RedisConnector) Connect() (err error) {
 		return nil
 	}
 
-	conn, err := redis.Dial("tcp", fmt.Sprintf("%s:%s", c.targetHost, c.targetPort), redis.DialDatabase(c.targetDB), redis.DialConnectTimeout(15*time.Second))
+	conn, err := redis.Dial("tcp", fmt.Sprintf("%s:%s", c.Config.ConnConfig.Host, c.Config.ConnConfig.Port), redis.DialDatabase(c.Config.ConnConfig.DB), redis.DialConnectTimeout(15*time.Second))
 	if err != nil {
 		return err
 	}
