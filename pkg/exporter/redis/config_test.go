@@ -9,33 +9,33 @@ func Test_RedisConnectionConfig_ShouldCheckRequiredConnectionInfo(t *testing.T) 
 
 	testCases := []struct {
 		desc     string
-		config   RedisConnectionConfig
+		config   ConnectionConfig
 		expected bool
 	}{
 		{
 			desc: "All connection info is fulfilled",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Host: "localhost",
 				Port: "6379",
 			},
 			expected: true,
 		}, {
 			desc: "Host info is missing",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Host: "",
 				Port: "6379",
 			},
 			expected: false,
 		}, {
 			desc: "Port info is missing",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Host: "localhost",
 				Port: "",
 			},
 			expected: false,
 		}, {
 			desc: "Host and Port info are missing",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Host: "",
 				Port: "",
 			},
@@ -56,26 +56,26 @@ func Test_RedisConnectionConfig_ShouldCheckHasValidDB(t *testing.T) {
 
 	testCases := []struct {
 		desc     string
-		config   RedisConnectionConfig
+		config   ConnectionConfig
 		expected bool
 	}{
 		{
 			desc: "DB index equals 0",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				DB: 0,
 			},
 			expected: true,
 		},
 		{
 			desc: "DB index lower than 0",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				DB: -1,
 			},
 			expected: false,
 		},
 		{
 			desc: "DB index greater than 0",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				DB: 1,
 			},
 			expected: true,
@@ -95,40 +95,40 @@ func Test_RedisConnectionConfig_ShouldCheckHasValidPort(t *testing.T) {
 
 	testCases := []struct {
 		desc     string
-		config   RedisConnectionConfig
+		config   ConnectionConfig
 		expected bool
 	}{
 		{
 			desc: "Port is higher than zero",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Port: "6379",
 			},
 			expected: true,
 		},
 		{
 			desc: "Port is equals zero",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Port: "0",
 			},
 			expected: true,
 		},
 		{
 			desc: "Port is lower than zero",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Port: "-6379",
 			},
 			expected: false,
 		},
 		{
 			desc: "Port is blank",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Port: "",
 			},
 			expected: false,
 		},
 		{
 			desc:     "Port is null",
-			config:   RedisConnectionConfig{},
+			config:   ConnectionConfig{},
 			expected: false,
 		},
 	}
@@ -146,12 +146,12 @@ func Test_RedisConnectionConfig_ShouldCheckHasValidConnectionInfo(t *testing.T) 
 
 	testCases := []struct {
 		desc     string
-		config   RedisConnectionConfig
+		config   ConnectionConfig
 		expected bool
 	}{
 		{
 			desc: "All configs set properly",
-			config: RedisConnectionConfig{
+			config: ConnectionConfig{
 				Host: "localhost",
 				Port: "6379",
 				DB:   0,

@@ -7,21 +7,13 @@ import (
 	"strings"
 )
 
-type ExporterConfig struct {
-	ConnectionConfig RedisConnectionConfig
-	CheckInterval    int
-	QueueNames       string
-	Extractor        Extractor
-	Connector        Connector
-}
-
-type RedisConnectionConfig struct {
+type ConnectionConfig struct {
 	Host string
 	Port string
 	DB   int
 }
 
-func (c *RedisConnectionConfig) HasRequiredConnectionInfo() (bool, error) {
+func (c *ConnectionConfig) HasRequiredConnectionInfo() (bool, error) {
 	var err error
 	var missingInfo []string
 	hasRequiredInfo := true
@@ -42,7 +34,7 @@ func (c *RedisConnectionConfig) HasRequiredConnectionInfo() (bool, error) {
 	return hasRequiredInfo, err
 }
 
-func (c *RedisConnectionConfig) HasValidConnectionInfo() (bool, error) {
+func (c *ConnectionConfig) HasValidConnectionInfo() (bool, error) {
 	var err error
 	var invalidFieldMessages []string
 	hasValidInfo := true
@@ -64,14 +56,14 @@ func (c *RedisConnectionConfig) HasValidConnectionInfo() (bool, error) {
 	return hasValidInfo, err
 }
 
-func (c *RedisConnectionConfig) HasValidDB() (bool, error) {
+func (c *ConnectionConfig) HasValidDB() (bool, error) {
 	if c.DB < 0 {
 		return false, errors.New(fmt.Sprintf("db can't be lower than zero: %d", c.DB))
 	}
 	return true, nil
 }
 
-func (c *RedisConnectionConfig) HasValidPort() (bool, error) {
+func (c *ConnectionConfig) HasValidPort() (bool, error) {
 	if len(c.Port) < 0 {
 		return false, errors.New(fmt.Sprintf("port can't be blank or null: %s", c.Port))
 	}
@@ -89,7 +81,7 @@ func (c *RedisConnectionConfig) HasValidPort() (bool, error) {
 	return true, nil
 }
 
-func (c *RedisConnectionConfig) PortToInt() (int, error) {
+func (c *ConnectionConfig) PortToInt() (int, error) {
 	var err error
 	var port int
 
