@@ -1,4 +1,4 @@
 .idea/
 vendor/
 bin/
-.git.old/
+**/.DS_Store
