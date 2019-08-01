@@ -51,7 +51,7 @@ type globalConfig struct {
 	statsdHost    string
 	statsdPort    string
 	metricsPrefix string
-	checkInterval int
+	scanInterval  int
 	queuesNames   string
 }
 
@@ -64,7 +64,7 @@ func getConfig() {
 	flag.StringVar(&config.statsdHost, "statsd-host", getEnv("STATSD_HOST", "127.0.0.1"), "StatsD target to where metrics must be sent")
 	flag.StringVar(&config.statsdPort, "statsd-port", getEnv("STATSD_PORT", "8125"), "StatsD target port open for connections")
 	flag.StringVar(&config.metricsPrefix, "metrics-prefix", getEnv("METRICS_PREFIX", "exporter"), "Prefix to be added to every metric")
-	flag.IntVar(&config.checkInterval, "check-interval", getEnvInt("CHECK_INTERVAL", 60), "Interval in seconds between check against queues")
+	flag.IntVar(&config.scanInterval, "scan-interval", getEnvInt("SCAN_INTERVAL", 60), "Interval in seconds between check against queues")
 	flag.StringVar(&config.queuesNames, "queues-names", getEnv("QUEUES_NAMES", ""), "Names of the queues to be scanned separated by comma. I.e: queue1,queue2")
 
 	flag.Parse()

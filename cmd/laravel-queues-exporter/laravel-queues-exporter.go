@@ -47,7 +47,7 @@ func main() {
 	exporterConfig := redis.RedisExporterConfig{
 		ConnectionConfig: connectionConfig,
 		QueueNames:       config.queuesNames,
-		CheckInterval:    config.checkInterval,
+		ScanInterval:     config.scanInterval,
 		Connector:        connector,
 		Extractor:        extractor,
 	}

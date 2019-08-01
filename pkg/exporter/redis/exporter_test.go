@@ -59,9 +59,9 @@ func TestShouldSelectAllQueuesToScan(t *testing.T) {
 			Port: "none",
 			DB:   0,
 		},
-		CheckInterval: 5,
-		Extractor:     extractor,
-		Connector:     connector,
+		ScanInterval: 5,
+		Extractor:    extractor,
+		Connector:    connector,
 	}
 
 	exporter, _ := NewRedisExporter(config)
@@ -91,10 +91,10 @@ func TestShouldSelectFilteredQueuesToScan(t *testing.T) {
 			Port: "none",
 			DB:   0,
 		},
-		CheckInterval: 5,
-		QueueNames:    strings.Join(filtered, ","),
-		Extractor:     extractor,
-		Connector:     connector,
+		ScanInterval: 5,
+		QueueNames:   strings.Join(filtered, ","),
+		Extractor:    extractor,
+		Connector:    connector,
 	}
 
 	exporter, _ := NewRedisExporter(config)
