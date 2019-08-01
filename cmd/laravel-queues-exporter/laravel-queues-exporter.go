@@ -43,7 +43,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	exporterConfig := redis.RedisExporterConfig{
+	exporterConfig := redis.ExporterConfig{
 		ConnectionConfig: connectionConfig,
 		QueueNames:       config.queuesNames,
 		ScanInterval:     config.scanInterval,

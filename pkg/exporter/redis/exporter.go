@@ -14,12 +14,11 @@ const (
 )
 
 type Exporter struct {
-	Config        RedisExporterConfig
+	Config        ExporterConfig
 	interruptScan bool
-	queueItems    []QueueItem
 }
 
-type RedisExporterConfig struct {
+type ExporterConfig struct {
 	ConnectionConfig ConnectionConfig
 	ScanInterval     int
 	QueueNames       string
@@ -43,7 +42,7 @@ type Connector interface {
 	Do(command string, args ...interface{}) (results interface{}, err error)
 }
 
-func NewRedisExporter(config RedisExporterConfig) (*Exporter, error) {
+func NewRedisExporter(config ExporterConfig) (*Exporter, error) {
 	if config.Connector == nil {
 		return nil, errors.New("connector can't be nil")
 	}
@@ -113,7 +112,6 @@ func (xp *Exporter) CountJobsForQueue(queue *QueueItem) error {
 }
 
 func (xp *Exporter) SelectQueuesToScan() ([]QueueItem, error) {
-
 	var err error
 	queueItems := []QueueItem{}
 
@@ -141,20 +139,39 @@ func parseQueueNames(queueNames string) []QueueItem {
 }
 
 func (q *QueueItem) LaravelQueueName() string {
-	if len(q.Name) == 0 {
+	var laravelName string
+
+	if q.HasQueueName() == false {
 		return q.Name
 	}
 
-	name := q.Name
-	parts := strings.Split(name, ":")
+	parts, partsCount := q.laravelQueueNameSplit()
 
-	if len(parts) == 1 {
-		name = fmt.Sprintf("%s:%s", QUEUE_ROOT_NODE, name)
-	} else if len(parts) > 1 {
-		if parts[0] != QUEUE_ROOT_NODE {
-			name = fmt.Sprintf("%s:%s", QUEUE_ROOT_NODE, name)
+	switch {
+	case partsCount == 0:
+		return laravelName
+	case partsCount >= 1:
+		tmpParts := []string{
+			QUEUE_ROOT_NODE,
 		}
+
+		for _, p := range parts {
+			if len(p) > 0 && p != QUEUE_ROOT_NODE {
+				tmpParts = append(tmpParts, p)
+			}
+		}
+
+		laravelName = strings.Join(tmpParts, ":")
 	}
 
-	return name
+	return laravelName
+}
+
+func (q *QueueItem) HasQueueName() bool {
+	return len(q.Name) > 0
+}
+
+func (q *QueueItem) laravelQueueNameSplit() ([]string, int) {
+	parts := strings.Split(q.Name, ":")
+	return parts, len(parts)
 }
