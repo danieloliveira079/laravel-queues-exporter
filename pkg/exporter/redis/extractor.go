@@ -29,7 +29,7 @@ func (xt *RedisExtractor) ListAllQueuesFromDB() ([]QueueItem, error) {
 	var err error
 	queueItems := []QueueItem{}
 
-	//TODO Warning when key are not available
+	//TODO Warning when key is not available
 	list, err := xt.Dispatcher().Do("keys", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
 
 	if err != nil {
