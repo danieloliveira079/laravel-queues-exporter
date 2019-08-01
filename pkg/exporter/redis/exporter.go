@@ -14,14 +14,14 @@ const (
 )
 
 type Exporter struct {
-	Config     RedisExporterConfig
-	interrupt  bool
-	queueItems []QueueItem
+	Config        RedisExporterConfig
+	interruptScan bool
+	queueItems    []QueueItem
 }
 
 type RedisExporterConfig struct {
 	ConnectionConfig ConnectionConfig
-	CheckInterval    int
+	ScanInterval     int
 	QueueNames       string
 	Extractor        Extractor
 	Connector        Connector
