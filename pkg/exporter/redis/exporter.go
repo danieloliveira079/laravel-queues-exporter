@@ -33,7 +33,7 @@ type QueueItem struct {
 }
 
 type Extractor interface {
-	ListAllQueues() ([]QueueItem, error)
+	ListAllQueuesFromDB() ([]QueueItem, error)
 	CountJobsForQueue(queue *QueueItem) error
 }
 
@@ -57,10 +57,10 @@ func NewRedisExporter(config RedisExporterConfig) (*Exporter, error) {
 	}, nil
 }
 
-func (r *Exporter) Stop(done chan os.Signal) {
+func (xp *Exporter) Stop(done chan os.Signal) {
 	log.Println("Stopping exporter")
-	r.interrupt = true
-	err := r.CloseConnector()
+	xp.interruptScan = true
+	err := xp.CloseConnector()
 	if err != nil {
 		log.Println("error closing connector:", err)
 	}
@@ -68,35 +68,35 @@ func (r *Exporter) Stop(done chan os.Signal) {
 	close(done)
 }
 
-func (r *Exporter) CloseConnector() error {
-	return r.Connector().Close()
+func (xp *Exporter) CloseConnector() error {
+	return xp.Connector().Close()
 }
 
-func (r *Exporter) Connector() Connector {
-	return r.Config.Connector
+func (xp *Exporter) Connector() Connector {
+	return xp.Config.Connector
 }
 
-func (r *Exporter) Scan() {
-	ticker := time.NewTicker(time.Duration(r.Config.CheckInterval) * time.Second)
+func (xp *Exporter) Scan() {
+	ticker := time.NewTicker(time.Duration(xp.Config.ScanInterval) * time.Second)
 	go func() {
 		defer ticker.Stop()
 		log.Println("Starting scanner")
 
 		for _ = range ticker.C {
-			if r.interrupt == true {
+			if xp.interruptScan == true {
 				log.Println("Stopping scanner")
 				ticker.Stop()
 				break
 			}
 
-			queues, err := r.SelectQueuesToScan()
+			queues, err := xp.SelectQueuesToScan()
 
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			for _, queue := range queues {
-				err = r.CountJobsForQueue(&queue)
+				err = xp.CountJobsForQueue(&queue)
 				if err != nil {
 					log.Println(fmt.Sprintf("error getting metrics for %s: %v", queue.Name, err))
 					continue
@@ -108,26 +108,26 @@ func (r *Exporter) Scan() {
 	}()
 }
 
-func (r *Exporter) CountJobsForQueue(queue *QueueItem) error {
-	return r.Extractor().CountJobsForQueue(queue)
+func (xp *Exporter) CountJobsForQueue(queue *QueueItem) error {
+	return xp.Extractor().CountJobsForQueue(queue)
 }
 
-func (r *Exporter) SelectQueuesToScan() ([]QueueItem, error) {
+func (xp *Exporter) SelectQueuesToScan() ([]QueueItem, error) {
 
 	var err error
 	queueItems := []QueueItem{}
 
-	if len(r.Config.QueueNames) > 0 {
-		queueItems = parseQueueNames(r.Config.QueueNames)
+	if len(xp.Config.QueueNames) > 0 {
+		queueItems = parseQueueNames(xp.Config.QueueNames)
 	} else {
-		queueItems, err = r.Extractor().ListAllQueues()
+		queueItems, err = xp.Extractor().ListAllQueuesFromDB()
 	}
 
 	return queueItems, err
 }
 
-func (r *Exporter) Extractor() Extractor {
-	return r.Config.Extractor
+func (xp *Exporter) Extractor() Extractor {
+	return xp.Config.Extractor
 }
 
 func parseQueueNames(queueNames string) []QueueItem {
@@ -138,4 +138,23 @@ func parseQueueNames(queueNames string) []QueueItem {
 	}
 
 	return queueItems
+}
+
+func (q *QueueItem) LaravelQueueName() string {
+	if len(q.Name) == 0 {
+		return q.Name
+	}
+
+	name := q.Name
+	parts := strings.Split(name, ":")
+
+	if len(parts) == 1 {
+		name = fmt.Sprintf("%s:%s", QUEUE_ROOT_NODE, name)
+	} else if len(parts) > 1 {
+		if parts[0] != QUEUE_ROOT_NODE {
+			name = fmt.Sprintf("%s:%s", QUEUE_ROOT_NODE, name)
+		}
+	}
+
+	return name
 }

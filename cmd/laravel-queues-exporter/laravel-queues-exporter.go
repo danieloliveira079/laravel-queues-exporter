@@ -36,7 +36,6 @@ func main() {
 	}
 
 	extractorConfig := redis.ExtractorConfig{
-		ConnConfig: connectionConfig,
 		Dispatcher: dispatcher,
 	}
 	extractor, err := redis.NewRedisExtractor(extractorConfig)

@@ -17,7 +17,7 @@ func (f *FakeRedisExtractor) Close() error {
 	return nil
 }
 
-func (f *FakeRedisExtractor) ListAllQueues() (queueItems []QueueItem, err error) {
+func (f *FakeRedisExtractor) ListAllQueuesFromDB() (queueItems []QueueItem, err error) {
 	for _, q := range f.Queues {
 		queueItems = append(queueItems, QueueItem{
 			Name: q,
@@ -46,7 +46,7 @@ func (c *FakeRedisConnector) Do(command string, args ...interface{}) (results in
 	panic("implement me")
 }
 
-func TestShouldSelectAllQueuesToScan(t *testing.T) {
+func Test_Extractor_ShouldSelectAllQueuesFromDBToScan(t *testing.T) {
 	extractor := &FakeRedisExtractor{
 		Queues: []string{"queue1", "queue2", "queue3"},
 	}
