@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
-	"strings"
 )
 
 type RedisExtractor struct {
@@ -12,7 +11,6 @@ type RedisExtractor struct {
 }
 
 type ExtractorConfig struct {
-	ConnConfig ConnectionConfig
 	Dispatcher CommandDispatcher
 }
 
@@ -27,11 +25,12 @@ func NewRedisExtractor(config ExtractorConfig) (*RedisExtractor, error) {
 	return &RedisExtractor{Config: config}, nil
 }
 
-func (re *RedisExtractor) ListAllQueues() ([]QueueItem, error) {
+func (xt *RedisExtractor) ListAllQueuesFromDB() ([]QueueItem, error) {
 	var err error
 	queueItems := []QueueItem{}
 
-	list, err := re.Dispatcher().Do("KEYS", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
+	//TODO Warning when key are not available
+	list, err := xt.Dispatcher().Do("keys", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
 
 	if err != nil {
 		return nil, err
@@ -51,49 +50,43 @@ func (re *RedisExtractor) ListAllQueues() ([]QueueItem, error) {
 	return queueItems, err
 }
 
-func (re *RedisExtractor) Dispatcher() CommandDispatcher {
-	return re.Config.Dispatcher
+func (xt *RedisExtractor) Dispatcher() CommandDispatcher {
+	return xt.Config.Dispatcher
 }
 
-func checkQueueName(name string) string {
-	parts := strings.Split(name, ":")
+func (xt *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
+	queueName := queue.LaravelQueueName()
 
-	if len(parts) == 1 {
-		name = fmt.Sprintf("%s:%s", QUEUE_ROOT_NODE, name)
-	} else if len(parts) > 1 {
-		if parts[0] != QUEUE_ROOT_NODE {
-			name = fmt.Sprintf("%s:%s", QUEUE_ROOT_NODE, name)
-		}
-	}
-
-	return name
-}
-
-func (re *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
-	name := checkQueueName(queue.Name)
-	queueType, err := redis.String(re.Dispatcher().Do("type", name))
+	//TODO Extract queue type check to its own method
+	queueType, err := redis.String(xt.Dispatcher().Do("type", queueName))
 
 	if err != nil {
 		return err
 	}
 
 	var jobsCount int64
-	var redisCmd string
+	redisCmd := xt.CountJobCmdNameByQueueType(queueType)
 
-	switch queueType {
-	case "zset":
-		redisCmd = "zcard"
-	case "list":
-		redisCmd = "llen"
-	case "none":
-		redisCmd = "llen"
-	}
-
-	jobsCount, err = redis.Int64(re.Dispatcher().Do(redisCmd, name))
+	jobsCount, err = redis.Int64(xt.Dispatcher().Do(redisCmd, queueName))
 	if err != nil {
 		return err
 	}
 
 	queue.Jobs = jobsCount
 	return err
+}
+
+func (xt *RedisExtractor) CountJobCmdNameByQueueType(queueType string) string {
+	var cmd string
+
+	switch queueType {
+	case "zset":
+		cmd = "zcard"
+	case "list":
+		cmd = "llen"
+	case "none":
+		cmd = "llen"
+	}
+
+	return cmd
 }
