@@ -25,11 +25,10 @@ func NewRedisExtractor(config ExtractorConfig) (*RedisExtractor, error) {
 	return &RedisExtractor{Config: config}, nil
 }
 
-func (xt *RedisExtractor) ListAllQueuesFromDB() ([]QueueItem, error) {
+func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*QueueItem, error) {
 	var err error
-	queueItems := []QueueItem{}
+	queueItems := []*QueueItem{}
 
-	//TODO Warning when key is not available
 	list, err := xt.Dispatcher().Do("keys", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
 
 	if err != nil {
@@ -43,7 +42,7 @@ func (xt *RedisExtractor) ListAllQueuesFromDB() ([]QueueItem, error) {
 	}
 
 	for _, q := range parsedList {
-		queueItems = append(queueItems, QueueItem{
+		queueItems = append(queueItems, &QueueItem{
 			Name: q,
 		})
 	}
@@ -57,23 +56,26 @@ func (xt *RedisExtractor) Dispatcher() CommandDispatcher {
 func (xt *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
 	queueName := queue.LaravelQueueName()
 
-	//TODO Extract queue type check to its own method
-	queueType, err := redis.String(xt.Dispatcher().Do("type", queueName))
-
-	if err != nil {
-		return err
-	}
-
 	var jobsCount int64
-	redisCmd := xt.CountJobCmdNameByQueueType(queueType)
+	redisCmd := xt.CountJobCmdNameByQueueType(queue.Type)
 
-	jobsCount, err = redis.Int64(xt.Dispatcher().Do(redisCmd, queueName))
+	//TODO Implement a parser instead of using package directly
+	jobsCount, err := redis.Int64(xt.Dispatcher().Do(redisCmd, queueName))
 	if err != nil {
 		return err
 	}
 
 	queue.Jobs = jobsCount
 	return err
+}
+
+func (xt *RedisExtractor) SetQueuesType(queues []*QueueItem) {
+	for i, queue := range queues {
+		queueType, err := redis.String(xt.Dispatcher().Do("type", queue.Name))
+		if err == nil {
+			queues[i].Type = queueType
+		}
+	}
 }
 
 func (xt *RedisExtractor) CountJobCmdNameByQueueType(queueType string) string {

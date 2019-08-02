@@ -28,12 +28,14 @@ type ExporterConfig struct {
 
 type QueueItem struct {
 	Name string
+	Type string
 	Jobs int64
 }
 
 type Extractor interface {
-	ListAllQueuesFromDB() ([]QueueItem, error)
+	ListAllQueuesFromDB() ([]*QueueItem, error)
 	CountJobsForQueue(queue *QueueItem) error
+	SetQueuesType(queues []*QueueItem)
 }
 
 type Connector interface {
@@ -89,13 +91,14 @@ func (xp *Exporter) Scan() {
 			}
 
 			queues, err := xp.SelectQueuesToScan()
+			xp.SetQueuesType(queues)
 
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			for _, queue := range queues {
-				err = xp.CountJobsForQueue(&queue)
+				err = xp.CountJobsForQueue(queue)
 				if err != nil {
 					log.Println(fmt.Sprintf("error getting metrics for %s: %v", queue.Name, err))
 					continue
@@ -111,12 +114,12 @@ func (xp *Exporter) CountJobsForQueue(queue *QueueItem) error {
 	return xp.Extractor().CountJobsForQueue(queue)
 }
 
-func (xp *Exporter) SelectQueuesToScan() ([]QueueItem, error) {
+func (xp *Exporter) SelectQueuesToScan() ([]*QueueItem, error) {
 	var err error
-	queueItems := []QueueItem{}
+	queueItems := []*QueueItem{}
 
 	if len(xp.Config.QueueNames) > 0 {
-		queueItems = parseQueueNames(xp.Config.QueueNames)
+		queueItems = parsedQueuesNames(xp.Config.QueueNames)
 	} else {
 		queueItems, err = xp.Extractor().ListAllQueuesFromDB()
 	}
@@ -124,15 +127,19 @@ func (xp *Exporter) SelectQueuesToScan() ([]QueueItem, error) {
 	return queueItems, err
 }
 
+func (xp *Exporter) SetQueuesType(queues []*QueueItem) {
+	xp.Extractor().SetQueuesType(queues)
+}
+
 func (xp *Exporter) Extractor() Extractor {
 	return xp.Config.Extractor
 }
 
-func parseQueueNames(queueNames string) []QueueItem {
-	queueItems := []QueueItem{}
+func parsedQueuesNames(queueNames string) []*QueueItem {
+	queueItems := []*QueueItem{}
 	names := strings.Split(queueNames, ",")
 	for _, n := range names {
-		queueItems = append(queueItems, QueueItem{Name: n})
+		queueItems = append(queueItems, &QueueItem{Name: n})
 	}
 
 	return queueItems
