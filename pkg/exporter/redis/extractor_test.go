@@ -145,7 +145,7 @@ func Test_RedisExtractor_GivenQueuesShouldSetQueueType(t *testing.T) {
 		expected map[string]string
 	}{
 		{
-			desc: "Set queue type for queues",
+			desc: "Set queue type for queues when they are present on DB",
 			queues: []*QueueItem{
 				{Name: "queue1"},
 				{Name: "queue2"},
@@ -157,6 +157,20 @@ func Test_RedisExtractor_GivenQueuesShouldSetQueueType(t *testing.T) {
 				"queue3": "none",
 			},
 		},
+		{
+			desc: "Do not set queue type for queues not present on DB",
+			queues: []*QueueItem{
+				{Name: "queue4"},
+				{Name: "queue5"},
+				{Name: "queue6"},
+				{Name: "queue7"},
+			},
+			expected: map[string]string{
+				"queue4": "none",
+				"queue5": "none",
+				"queue6": "none",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -165,7 +179,8 @@ func Test_RedisExtractor_GivenQueuesShouldSetQueueType(t *testing.T) {
 				args := []interface{}{
 					q.Name,
 				}
-				dispatcher.On("Do", cmd, args).Return(tc.expected[q.Name])
+				queueType := tc.expected[q.Name]
+				dispatcher.On("Do", cmd, args).Return(queueType).Once()
 			}
 
 			extractor.SetQueuesType(tc.queues)

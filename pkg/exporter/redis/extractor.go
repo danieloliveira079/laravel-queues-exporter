@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
+	"log"
 )
 
 type RedisExtractor struct {
@@ -72,9 +73,12 @@ func (xt *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
 func (xt *RedisExtractor) SetQueuesType(queues []*QueueItem) {
 	for i, queue := range queues {
 		queueType, err := redis.String(xt.Dispatcher().Do("type", queue.Name))
-		if err == nil {
-			queues[i].Type = queueType
+
+		if err != nil {
+			log.Printf("error: type could not defined for queue %s", queue.Name)
 		}
+
+		queues[i].Type = queueType
 	}
 }
 
