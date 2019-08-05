@@ -87,7 +87,7 @@ func Test_RedisExtractor_ShouldListAllQueuesFromDB(t *testing.T) {
 	assert.Equal(t, queuesMatch(queuesFromDB, queueItems), true)
 }
 
-func Test_RedisExtractor_ShouldReturnCommandByQueueType(t *testing.T) {
+func Test_RedisExtractor_ShouldReturnCountJobCommandNameByQueueType(t *testing.T) {
 	dispatcher := new(FakeDispatcher)
 
 	config := ExtractorConfig{
@@ -121,14 +121,14 @@ func Test_RedisExtractor_ShouldReturnCommandByQueueType(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cmd := extractor.CountJobCmdNameByQueueType(tc.queueType)
+			cmd := extractor.CountJobsCmdNameByQueueType(tc.queueType)
 			assert.Equal(t, tc.expected, cmd)
 		})
 	}
 
 }
 
-func Test_RedisExtractor_GivenQueuesShouldSetQueueType(t *testing.T) {
+func Test_RedisExtractor_GivenQueueItemsShouldSetQueueType(t *testing.T) {
 	dispatcher := new(FakeDispatcher)
 	cmd := "type"
 
@@ -183,7 +183,7 @@ func Test_RedisExtractor_GivenQueuesShouldSetQueueType(t *testing.T) {
 				dispatcher.On("Do", cmd, args).Return(queueType).Once()
 			}
 
-			extractor.SetQueuesType(tc.queues)
+			extractor.SetQueueTypeForQueues(tc.queues)
 			for _, q := range tc.queues {
 				assert.Equal(t, q.Type, tc.expected[q.Name])
 			}

@@ -26,6 +26,7 @@ type ExporterConfig struct {
 	Connector        Connector
 }
 
+//TODO extract to a separated file
 type QueueItem struct {
 	Name string
 	Type string
@@ -35,7 +36,7 @@ type QueueItem struct {
 type Extractor interface {
 	ListAllQueuesFromDB() ([]*QueueItem, error)
 	CountJobsForQueue(queue *QueueItem) error
-	SetQueuesType(queues []*QueueItem)
+	SetQueueTypeForQueues(queues []*QueueItem)
 }
 
 type Connector interface {
@@ -127,14 +128,6 @@ func (xp *Exporter) SelectQueuesToScan() ([]*QueueItem, error) {
 	return queueItems, err
 }
 
-func (xp *Exporter) SetQueuesType(queues []*QueueItem) {
-	xp.Extractor().SetQueuesType(queues)
-}
-
-func (xp *Exporter) Extractor() Extractor {
-	return xp.Config.Extractor
-}
-
 func parsedQueuesNames(queueNames string) []*QueueItem {
 	queueItems := []*QueueItem{}
 	names := strings.Split(queueNames, ",")
@@ -143,6 +136,14 @@ func parsedQueuesNames(queueNames string) []*QueueItem {
 	}
 
 	return queueItems
+}
+
+func (xp *Exporter) SetQueuesType(queues []*QueueItem) {
+	xp.Extractor().SetQueueTypeForQueues(queues)
+}
+
+func (xp *Exporter) Extractor() Extractor {
+	return xp.Config.Extractor
 }
 
 func (q *QueueItem) LaravelQueueName() string {

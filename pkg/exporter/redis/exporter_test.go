@@ -34,7 +34,7 @@ func (f *FakeRedisExtractor) CountJobsForQueue(queue *QueueItem) error {
 	panic("implement me")
 }
 
-func (f *FakeRedisExtractor) SetQueuesType(queues []*QueueItem) {
+func (f *FakeRedisExtractor) SetQueueTypeForQueues(queues []*QueueItem) {
 	panic("implement me")
 }
 
