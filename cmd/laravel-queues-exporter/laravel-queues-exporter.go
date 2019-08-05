@@ -1,14 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/exporter/redis"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/forwarder"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
 	"log"
 	"os"
 	"os/signal"
 	"runtime"
 	"syscall"
 )
+
+type Forwarder interface {
+	Forward(metrics []metric.Metric)
+}
 
 func main() {
 	getConfig()
@@ -47,7 +52,7 @@ func main() {
 	exporterConfig := redis.ExporterConfig{
 		ConnectionConfig: connectionConfig,
 		QueueNames:       config.queuesNames,
-		ScanInterval:     config.scanInterval,
+		CollectInterval:  config.collectInterval,
 	}
 	exporter, err := redis.NewRedisExporter(exporterConfig, connector, extractor)
 
@@ -55,13 +60,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	collected := make(chan string)
+	collected := make(chan []metric.Metric)
 	exporter.Run(collected)
+
+	forwarders := []Forwarder{
+		&forwarder.Stdout{},
+		&forwarder.Log{},
+	}
 
 	for {
 		select {
-		case forwardChan := <-collected:
-			fmt.Println(forwardChan)
+		case metrics := <-collected:
+			for _, f := range forwarders {
+				f.Forward(metrics)
+			}
 		case signalReceived := <-signals:
 			switch signalReceived {
 			case syscall.SIGTERM:
