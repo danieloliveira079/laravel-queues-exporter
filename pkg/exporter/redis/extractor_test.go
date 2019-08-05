@@ -53,7 +53,7 @@ func Test_RedisExtractor_ShouldListAllQueuesFromDB(t *testing.T) {
 		"queue3",
 	}
 
-	queuesMatch := func(onDB []interface{}, fromDB []QueueItem) bool {
+	queuesMatch := func(onDB []interface{}, fromDB []*QueueItem) bool {
 		allMatch := true
 		for _, queue := range onDB {
 			found := false
@@ -87,7 +87,7 @@ func Test_RedisExtractor_ShouldListAllQueuesFromDB(t *testing.T) {
 	assert.Equal(t, queuesMatch(queuesFromDB, queueItems), true)
 }
 
-func Test_RedisExtractor_ShouldReturnCommandByQueueType(t *testing.T) {
+func Test_RedisExtractor_ShouldReturnCountJobCommandNameByQueueType(t *testing.T) {
 	dispatcher := new(FakeDispatcher)
 
 	config := ExtractorConfig{
@@ -121,8 +121,72 @@ func Test_RedisExtractor_ShouldReturnCommandByQueueType(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			cmd := extractor.CountJobCmdNameByQueueType(tc.queueType)
+			cmd := extractor.CountJobsCmdNameByQueueType(tc.queueType)
 			assert.Equal(t, tc.expected, cmd)
+		})
+	}
+
+}
+
+func Test_RedisExtractor_GivenQueueItemsShouldSetQueueType(t *testing.T) {
+	dispatcher := new(FakeDispatcher)
+	cmd := "type"
+
+	config := ExtractorConfig{
+		Dispatcher: dispatcher,
+	}
+
+	extractor, err := NewRedisExtractor(config)
+	require.Nil(t, err)
+
+	testCases := []struct {
+		desc     string
+		queues   []*QueueItem
+		expected map[string]string
+	}{
+		{
+			desc: "Set queue type for queues when they are present on DB",
+			queues: []*QueueItem{
+				{Name: "queue1"},
+				{Name: "queue2"},
+				{Name: "queue3"},
+			},
+			expected: map[string]string{
+				"queue1": "zset",
+				"queue2": "list",
+				"queue3": "none",
+			},
+		},
+		{
+			desc: "Do not set queue type for queues not present on DB",
+			queues: []*QueueItem{
+				{Name: "queue4"},
+				{Name: "queue5"},
+				{Name: "queue6"},
+				{Name: "queue7"},
+			},
+			expected: map[string]string{
+				"queue4": "none",
+				"queue5": "none",
+				"queue6": "none",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			for _, q := range tc.queues {
+				args := []interface{}{
+					q.Name,
+				}
+				queueType := tc.expected[q.Name]
+				dispatcher.On("Do", cmd, args).Return(queueType).Once()
+			}
+
+			extractor.SetQueueTypeForQueues(tc.queues)
+			for _, q := range tc.queues {
+				assert.Equal(t, q.Type, tc.expected[q.Name])
+			}
 		})
 	}
 

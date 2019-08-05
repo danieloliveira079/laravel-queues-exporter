@@ -20,9 +20,9 @@ func (f *FakeRedisExtractor) Close() error {
 	return nil
 }
 
-func (f *FakeRedisExtractor) ListAllQueuesFromDB() (queueItems []QueueItem, err error) {
+func (f *FakeRedisExtractor) ListAllQueuesFromDB() (queueItems []*QueueItem, err error) {
 	for _, q := range f.QueuesOnDB {
-		queueItems = append(queueItems, QueueItem{
+		queueItems = append(queueItems, &QueueItem{
 			Name: q,
 		})
 	}
@@ -31,6 +31,10 @@ func (f *FakeRedisExtractor) ListAllQueuesFromDB() (queueItems []QueueItem, err 
 }
 
 func (f *FakeRedisExtractor) CountJobsForQueue(queue *QueueItem) error {
+	panic("implement me")
+}
+
+func (f *FakeRedisExtractor) SetQueueTypeForQueues(queues []*QueueItem) {
 	panic("implement me")
 }
 
@@ -61,7 +65,7 @@ func Test_Exporter_ShouldReturnAllQueuesFromDB(t *testing.T) {
 
 	exporter, _ := NewRedisExporter(config)
 
-	actual := func(queueItems []QueueItem) string {
+	actual := func(queueItems []*QueueItem) string {
 		var names []string
 		for _, q := range queueItems {
 			names = append(names, q.Name)
@@ -69,7 +73,7 @@ func Test_Exporter_ShouldReturnAllQueuesFromDB(t *testing.T) {
 		return strings.Join(names, ",")
 	}
 
-	dbMatchesSelected := func(fromDB []string, selected []QueueItem) (bool, error) {
+	dbMatchesSelected := func(fromDB []string, selected []*QueueItem) (bool, error) {
 		allMatch := true
 		var err error
 		for _, queue := range fromDB {
@@ -94,7 +98,7 @@ func Test_Exporter_ShouldReturnAllQueuesFromDB(t *testing.T) {
 	testCases := []struct {
 		desc                string
 		remoteQueues        []string
-		validateQueuesMatch func(fromDB []string, selected []QueueItem) (bool, error)
+		validateQueuesMatch func(fromDB []string, selected []*QueueItem) (bool, error)
 		expected            bool
 	}{
 		{
@@ -125,7 +129,7 @@ func Test_Exporter_ShouldSelectFilteredQueuesFromDB(t *testing.T) {
 
 	exporter, _ := NewRedisExporter(config)
 
-	actual := func(queueItems []QueueItem) string {
+	actual := func(queueItems []*QueueItem) string {
 		var names []string
 		for _, q := range queueItems {
 			names = append(names, q.Name)
@@ -133,7 +137,7 @@ func Test_Exporter_ShouldSelectFilteredQueuesFromDB(t *testing.T) {
 		return strings.Join(names, ",")
 	}
 
-	configMatchesSelected := func(fromConfig string, selected []QueueItem) (bool, error) {
+	configMatchesSelected := func(fromConfig string, selected []*QueueItem) (bool, error) {
 		allMatch := true
 		var err error
 		for _, queue := range strings.Split(fromConfig, ",") {
@@ -159,7 +163,7 @@ func Test_Exporter_ShouldSelectFilteredQueuesFromDB(t *testing.T) {
 		desc                string
 		remoteQueues        []string
 		queuesFromConfig    string
-		validateQueuesMatch func(fromConfig string, actual []QueueItem) (bool, error)
+		validateQueuesMatch func(fromConfig string, actual []*QueueItem) (bool, error)
 		expected            bool
 	}{
 		{

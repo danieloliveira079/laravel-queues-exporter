@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gomodule/redigo/redis"
+	"log"
 )
 
 type RedisExtractor struct {
@@ -25,11 +26,10 @@ func NewRedisExtractor(config ExtractorConfig) (*RedisExtractor, error) {
 	return &RedisExtractor{Config: config}, nil
 }
 
-func (xt *RedisExtractor) ListAllQueuesFromDB() ([]QueueItem, error) {
+func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*QueueItem, error) {
 	var err error
-	queueItems := []QueueItem{}
+	queueItems := []*QueueItem{}
 
-	//TODO Warning when key is not available
 	list, err := xt.Dispatcher().Do("keys", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
 
 	if err != nil {
@@ -43,7 +43,7 @@ func (xt *RedisExtractor) ListAllQueuesFromDB() ([]QueueItem, error) {
 	}
 
 	for _, q := range parsedList {
-		queueItems = append(queueItems, QueueItem{
+		queueItems = append(queueItems, &QueueItem{
 			Name: q,
 		})
 	}
@@ -57,17 +57,11 @@ func (xt *RedisExtractor) Dispatcher() CommandDispatcher {
 func (xt *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
 	queueName := queue.LaravelQueueName()
 
-	//TODO Extract queue type check to its own method
-	queueType, err := redis.String(xt.Dispatcher().Do("type", queueName))
-
-	if err != nil {
-		return err
-	}
-
 	var jobsCount int64
-	redisCmd := xt.CountJobCmdNameByQueueType(queueType)
+	cmdName := xt.CountJobsCmdNameByQueueType(queue.Type)
 
-	jobsCount, err = redis.Int64(xt.Dispatcher().Do(redisCmd, queueName))
+	//TODO Implement a parser instead of using package directly
+	jobsCount, err := redis.Int64(xt.Dispatcher().Do(cmdName, queueName))
 	if err != nil {
 		return err
 	}
@@ -76,7 +70,19 @@ func (xt *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
 	return err
 }
 
-func (xt *RedisExtractor) CountJobCmdNameByQueueType(queueType string) string {
+func (xt *RedisExtractor) SetQueueTypeForQueues(queues []*QueueItem) {
+	for i, queue := range queues {
+		queueType, err := redis.String(xt.Dispatcher().Do("type", queue.Name))
+
+		if err != nil {
+			log.Printf("error: type could not defined for queue %s", queue.Name)
+		}
+
+		queues[i].Type = queueType
+	}
+}
+
+func (xt *RedisExtractor) CountJobsCmdNameByQueueType(queueType string) string {
 	var cmd string
 
 	switch queueType {
