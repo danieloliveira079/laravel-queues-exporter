@@ -45,7 +45,7 @@ func Test_RedisExtractor_ShouldListAllQueuesFromDB(t *testing.T) {
 
 	cmd := "keys"
 	args := []interface{}{
-		fmt.Sprintf("%s:*", QUEUE_ROOT_NODE),
+		fmt.Sprintf("%s:*", LARAVEL_QUEUE_ROOT_NODE),
 	}
 
 	queuesFromDB := []interface{}{

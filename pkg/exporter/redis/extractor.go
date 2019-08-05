@@ -31,7 +31,7 @@ func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*RedisQueue, error) {
 	var err error
 	queueItems := []*RedisQueue{}
 
-	list, err := xt.Dispatcher().Do("keys", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
+	list, err := xt.Dispatcher().Do("keys", fmt.Sprintf("%s:*", LARAVEL_QUEUE_ROOT_NODE))
 
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (xt *RedisExtractor) CountJobsForQueues(queues []*RedisQueue) error {
 	var err error
 
 	for _, q := range queues {
-		queueName := q.ToLaravel()
+		queueName := q.FullName()
 
 		var jobsCount int64
 		cmdName := xt.CountJobsCmdNameByQueueType(q.GetQueueType())
