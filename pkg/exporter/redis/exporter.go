@@ -3,14 +3,11 @@ package redis
 import (
 	"errors"
 	"fmt"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/queue"
 	"log"
 	"os"
 	"strings"
 	"time"
-)
-
-const (
-	QUEUE_ROOT_NODE = "queues"
 )
 
 type Exporter struct {
@@ -26,17 +23,10 @@ type ExporterConfig struct {
 	Connector        Connector
 }
 
-//TODO extract to a separated file
-type QueueItem struct {
-	Name string
-	Type string
-	Jobs int64
-}
-
 type Extractor interface {
-	ListAllQueuesFromDB() ([]*QueueItem, error)
-	CountJobsForQueue(queue *QueueItem) error
-	SetQueueTypeForQueues(queues []*QueueItem)
+	ListAllQueuesFromDB() ([]*RedisQueue, error)
+	CountJobsForQueue(queue *RedisQueue) error
+	SetQueueTypeForQueues(queues []*RedisQueue)
 }
 
 type Connector interface {
@@ -101,23 +91,24 @@ func (xp *Exporter) Scan() {
 			for _, queue := range queues {
 				err = xp.CountJobsForQueue(queue)
 				if err != nil {
-					log.Println(fmt.Sprintf("error getting metrics for %s: %v", queue.Name, err))
+					log.Println(fmt.Sprintf("error getting metrics for %s: %v", queue.queueItem.Name, err))
 					continue
 				}
 
-				log.Println(strings.Replace(queue.Name, fmt.Sprintf("%s:", QUEUE_ROOT_NODE), "", 1), queue.Jobs)
+				//TODO Implement RedisQueueMetricsFormatter to output metrics
+				log.Println(strings.Replace(queue.Name(), fmt.Sprintf("%s:", QUEUE_ROOT_NODE), "", 1), queue.GetCurrentJobsCount())
 			}
 		}
 	}()
 }
 
-func (xp *Exporter) CountJobsForQueue(queue *QueueItem) error {
+func (xp *Exporter) CountJobsForQueue(queue *RedisQueue) error {
 	return xp.Extractor().CountJobsForQueue(queue)
 }
 
-func (xp *Exporter) SelectQueuesToScan() ([]*QueueItem, error) {
+func (xp *Exporter) SelectQueuesToScan() ([]*RedisQueue, error) {
 	var err error
-	queueItems := []*QueueItem{}
+	queueItems := []*RedisQueue{}
 
 	if len(xp.Config.QueueNames) > 0 {
 		queueItems = parsedQueuesNames(xp.Config.QueueNames)
@@ -128,58 +119,20 @@ func (xp *Exporter) SelectQueuesToScan() ([]*QueueItem, error) {
 	return queueItems, err
 }
 
-func parsedQueuesNames(queueNames string) []*QueueItem {
-	queueItems := []*QueueItem{}
+func parsedQueuesNames(queueNames string) []*RedisQueue {
+	queueItems := []*RedisQueue{}
 	names := strings.Split(queueNames, ",")
 	for _, n := range names {
-		queueItems = append(queueItems, &QueueItem{Name: n})
+		queueItems = append(queueItems, &RedisQueue{queueItem: &queue.QueueItem{Name: n}})
 	}
 
 	return queueItems
 }
 
-func (xp *Exporter) SetQueuesType(queues []*QueueItem) {
+func (xp *Exporter) SetQueuesType(queues []*RedisQueue) {
 	xp.Extractor().SetQueueTypeForQueues(queues)
 }
 
 func (xp *Exporter) Extractor() Extractor {
 	return xp.Config.Extractor
-}
-
-func (q *QueueItem) LaravelQueueName() string {
-	var laravelName string
-
-	if q.HasQueueName() == false {
-		return q.Name
-	}
-
-	parts, partsCount := q.laravelQueueNameSplit()
-
-	switch {
-	case partsCount == 0:
-		return laravelName
-	case partsCount >= 1:
-		tmpParts := []string{
-			QUEUE_ROOT_NODE,
-		}
-
-		for _, p := range parts {
-			if len(p) > 0 && p != QUEUE_ROOT_NODE {
-				tmpParts = append(tmpParts, p)
-			}
-		}
-
-		laravelName = strings.Join(tmpParts, ":")
-	}
-
-	return laravelName
-}
-
-func (q *QueueItem) HasQueueName() bool {
-	return len(q.Name) > 0
-}
-
-func (q *QueueItem) laravelQueueNameSplit() ([]string, int) {
-	parts := strings.Split(q.Name, ":")
-	return parts, len(parts)
 }

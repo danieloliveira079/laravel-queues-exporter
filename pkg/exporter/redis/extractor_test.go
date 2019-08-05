@@ -2,6 +2,7 @@ package redis
 
 import (
 	"fmt"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/queue"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -53,12 +54,12 @@ func Test_RedisExtractor_ShouldListAllQueuesFromDB(t *testing.T) {
 		"queue3",
 	}
 
-	queuesMatch := func(onDB []interface{}, fromDB []*QueueItem) bool {
+	queuesMatch := func(onDB []interface{}, fromDB []*RedisQueue) bool {
 		allMatch := true
 		for _, queue := range onDB {
 			found := false
 			for _, item := range fromDB {
-				if queue == item.Name {
+				if queue == item.Name() {
 					found = true
 					break
 				}
@@ -141,15 +142,15 @@ func Test_RedisExtractor_GivenQueueItemsShouldSetQueueType(t *testing.T) {
 
 	testCases := []struct {
 		desc     string
-		queues   []*QueueItem
+		queues   []*RedisQueue
 		expected map[string]string
 	}{
 		{
 			desc: "Set queue type for queues when they are present on DB",
-			queues: []*QueueItem{
-				{Name: "queue1"},
-				{Name: "queue2"},
-				{Name: "queue3"},
+			queues: []*RedisQueue{
+				{queueItem: &queue.QueueItem{Name: "queue1"}},
+				{queueItem: &queue.QueueItem{Name: "queue2"}},
+				{queueItem: &queue.QueueItem{Name: "queue3"}},
 			},
 			expected: map[string]string{
 				"queue1": "zset",
@@ -159,11 +160,11 @@ func Test_RedisExtractor_GivenQueueItemsShouldSetQueueType(t *testing.T) {
 		},
 		{
 			desc: "Do not set queue type for queues not present on DB",
-			queues: []*QueueItem{
-				{Name: "queue4"},
-				{Name: "queue5"},
-				{Name: "queue6"},
-				{Name: "queue7"},
+			queues: []*RedisQueue{
+				{queueItem: &queue.QueueItem{Name: "queue4"}},
+				{queueItem: &queue.QueueItem{Name: "queue5"}},
+				{queueItem: &queue.QueueItem{Name: "queue6"}},
+				{queueItem: &queue.QueueItem{Name: "queue7"}},
 			},
 			expected: map[string]string{
 				"queue4": "none",
@@ -177,15 +178,15 @@ func Test_RedisExtractor_GivenQueueItemsShouldSetQueueType(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			for _, q := range tc.queues {
 				args := []interface{}{
-					q.Name,
+					q.Name(),
 				}
-				queueType := tc.expected[q.Name]
+				queueType := tc.expected[q.Name()]
 				dispatcher.On("Do", cmd, args).Return(queueType).Once()
 			}
 
 			extractor.SetQueueTypeForQueues(tc.queues)
 			for _, q := range tc.queues {
-				assert.Equal(t, q.Type, tc.expected[q.Name])
+				assert.Equal(t, q.GetQueueType(), tc.expected[q.Name()])
 			}
 		})
 	}
