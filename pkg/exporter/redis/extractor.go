@@ -3,6 +3,7 @@ package redis
 import (
 	"errors"
 	"fmt"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/queue"
 	"github.com/gomodule/redigo/redis"
 	"log"
 )
@@ -26,9 +27,9 @@ func NewRedisExtractor(config ExtractorConfig) (*RedisExtractor, error) {
 	return &RedisExtractor{Config: config}, nil
 }
 
-func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*QueueItem, error) {
+func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*RedisQueue, error) {
 	var err error
-	queueItems := []*QueueItem{}
+	queueItems := []*RedisQueue{}
 
 	list, err := xt.Dispatcher().Do("keys", fmt.Sprintf("%s:*", QUEUE_ROOT_NODE))
 
@@ -43,8 +44,10 @@ func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*QueueItem, error) {
 	}
 
 	for _, q := range parsedList {
-		queueItems = append(queueItems, &QueueItem{
-			Name: q,
+		queueItems = append(queueItems, &RedisQueue{
+			queueItem: &queue.QueueItem{
+				Name: q,
+			},
 		})
 	}
 	return queueItems, err
@@ -54,11 +57,11 @@ func (xt *RedisExtractor) Dispatcher() CommandDispatcher {
 	return xt.Config.Dispatcher
 }
 
-func (xt *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
+func (xt *RedisExtractor) CountJobsForQueue(queue *RedisQueue) error {
 	queueName := queue.LaravelQueueName()
 
 	var jobsCount int64
-	cmdName := xt.CountJobsCmdNameByQueueType(queue.Type)
+	cmdName := xt.CountJobsCmdNameByQueueType(queue.GetQueueType())
 
 	//TODO Implement a parser instead of using package directly
 	jobsCount, err := redis.Int64(xt.Dispatcher().Do(cmdName, queueName))
@@ -66,19 +69,19 @@ func (xt *RedisExtractor) CountJobsForQueue(queue *QueueItem) error {
 		return err
 	}
 
-	queue.Jobs = jobsCount
+	queue.SetCurrentJobsCount(jobsCount)
 	return err
 }
 
-func (xt *RedisExtractor) SetQueueTypeForQueues(queues []*QueueItem) {
+func (xt *RedisExtractor) SetQueueTypeForQueues(queues []*RedisQueue) {
 	for i, queue := range queues {
-		queueType, err := redis.String(xt.Dispatcher().Do("type", queue.Name))
+		queueType, err := redis.String(xt.Dispatcher().Do("type", queue.Name()))
 
 		if err != nil {
-			log.Printf("error: type could not defined for queue %s", queue.Name)
+			log.Printf("error: type could not defined for queue %s", queue.Name())
 		}
 
-		queues[i].Type = queueType
+		queues[i].SetQueueType(queueType)
 	}
 }
 
