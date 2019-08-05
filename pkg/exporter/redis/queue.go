@@ -1,12 +1,13 @@
 package redis
 
 import (
+	"fmt"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/queue"
 	"strings"
 )
 
 const (
-	QUEUE_ROOT_NODE = "queues"
+	LARAVEL_QUEUE_ROOT_NODE = "queues"
 )
 
 type RedisQueue struct {
@@ -15,7 +16,7 @@ type RedisQueue struct {
 }
 
 func (q *RedisQueue) Name() string {
-	return q.queueItem.Name
+	return strings.Replace(q.queueItem.Name, fmt.Sprintf("%s:", LARAVEL_QUEUE_ROOT_NODE), "", 1)
 }
 
 func (q *RedisQueue) GetQueueType() string {
@@ -34,7 +35,7 @@ func (q *RedisQueue) SetCurrentJobsCount(count int64) {
 	q.queueItem.Jobs = count
 }
 
-func (q *RedisQueue) ToLaravel() string {
+func (q *RedisQueue) FullName() string {
 	var laravelName string
 
 	if q.queueItem == nil || q.queueItem.HasQueueName() == false {
@@ -48,11 +49,11 @@ func (q *RedisQueue) ToLaravel() string {
 		return laravelName
 	case partsCount >= 1:
 		tmpParts := []string{
-			QUEUE_ROOT_NODE,
+			LARAVEL_QUEUE_ROOT_NODE,
 		}
 
 		for _, p := range parts {
-			if len(p) > 0 && p != QUEUE_ROOT_NODE {
+			if len(p) > 0 && p != LARAVEL_QUEUE_ROOT_NODE {
 				tmpParts = append(tmpParts, p)
 			}
 		}
