@@ -2,7 +2,7 @@ package redis
 
 import (
 	"errors"
-	"fmt"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/queue"
 	"log"
 	"os"
@@ -11,16 +11,16 @@ import (
 )
 
 type Exporter struct {
-	Config        ExporterConfig
-	Extractor     Extractor
-	Connector     Connector
-	Queues        []*RedisQueue
-	interruptScan bool
+	Config           ExporterConfig
+	Extractor        Extractor
+	Connector        Connector
+	Queues           []*RedisQueue
+	interruptCollect bool
 }
 
 type ExporterConfig struct {
 	ConnectionConfig ConnectionConfig
-	ScanInterval     int
+	CollectInterval  int
 	QueueNames       string
 }
 
@@ -54,7 +54,7 @@ func NewRedisExporter(config ExporterConfig, connector Connector, extractor Extr
 
 func (xp *Exporter) Stop(done chan os.Signal) {
 	log.Println("Stopping exporter")
-	xp.interruptScan = true
+	xp.interruptCollect = true
 	err := xp.CloseConnector()
 	if err != nil {
 		log.Println("error closing connector:", err)
@@ -67,44 +67,49 @@ func (xp *Exporter) CloseConnector() error {
 	return xp.Connector.Close()
 }
 
-func (xp *Exporter) Run(collected chan string) {
-	ticker := time.NewTicker(time.Duration(xp.Config.ScanInterval) * time.Second)
+func (xp *Exporter) Run(collected chan []metric.Metric) {
+	log.Println("Starting exporter")
+	ticker := time.NewTicker(time.Duration(xp.Config.CollectInterval) * time.Second)
+
 	go func() {
 		defer ticker.Stop()
-		log.Println("Starting scanner")
+		defer close(collected)
 
 		for _ = range ticker.C {
-			if xp.interruptScan == true {
+			if xp.interruptCollect == true {
 				log.Println("Stopping scanner")
-				ticker.Stop()
 				break
 			}
 
-			queues, err := xp.SelectQueuesToScan()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			xp.SetQueuesType(queues)
-			xp.Queues = queues
-
-			err = xp.CountJobsForQueues(xp.Queues)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			for _, q := range xp.Queues {
-				if err != nil {
-					log.Println(fmt.Sprintf("error getting metrics for %s: %v", q.Name(), err))
-					continue
-				}
-
-				//TODO Implement RedisQueueMetricsFormatter to output metrics
-				metric := fmt.Sprintf("%s %d", q.Name(), q.GetCurrentJobsCount())
-				collected <- metric
-			}
+			collected <- xp.Collect()
 		}
 	}()
+}
+
+func (xp *Exporter) Collect() []metric.Metric {
+	var err error
+
+	xp.Queues, err = xp.SelectQueuesToScan()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	xp.SetQueuesType(xp.Queues)
+
+	err = xp.CountJobsForQueues(xp.Queues)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	metrics := []metric.Metric{}
+	for _, q := range xp.Queues {
+		metrics = append(metrics, metric.Metric{
+			Name:  q.Name(),
+			Value: q.GetCurrentJobsCount(),
+		})
+	}
+
+	return metrics
 }
 
 func (xp *Exporter) CountJobsForQueues(queues []*RedisQueue) error {
