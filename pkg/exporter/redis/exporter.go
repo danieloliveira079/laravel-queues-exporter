@@ -68,7 +68,6 @@ func (xp *Exporter) CloseConnector() error {
 }
 
 func (xp *Exporter) Run(collected chan string) {
-func (xp *Exporter) Scan() {
 	ticker := time.NewTicker(time.Duration(xp.Config.ScanInterval) * time.Second)
 	go func() {
 		defer ticker.Stop()
@@ -101,7 +100,8 @@ func (xp *Exporter) Scan() {
 				}
 
 				//TODO Implement RedisQueueMetricsFormatter to output metrics
-				log.Println(strings.Replace(q.Name(), fmt.Sprintf("%s:", QUEUE_ROOT_NODE), "", 1), q.GetCurrentJobsCount())
+				metric := fmt.Sprintf("%s %d", q.Name(), q.GetCurrentJobsCount())
+				collected <- metric
 			}
 		}
 	}()
