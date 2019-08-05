@@ -12,16 +12,16 @@ import (
 
 type Exporter struct {
 	Config        ExporterConfig
-	interruptScan bool
+	Extractor     Extractor
+	Connector     Connector
 	Queues        []*RedisQueue
+	interruptScan bool
 }
 
 type ExporterConfig struct {
 	ConnectionConfig ConnectionConfig
 	ScanInterval     int
 	QueueNames       string
-	Extractor        Extractor
-	Connector        Connector
 }
 
 type Extractor interface {
@@ -36,17 +36,19 @@ type Connector interface {
 	Do(command string, args ...interface{}) (results interface{}, err error)
 }
 
-func NewRedisExporter(config ExporterConfig) (*Exporter, error) {
-	if config.Connector == nil {
+func NewRedisExporter(config ExporterConfig, connector Connector, extractor Extractor) (*Exporter, error) {
+	if connector == nil {
 		return nil, errors.New("connector can't be nil")
 	}
 
-	if config.Extractor == nil {
+	if extractor == nil {
 		return nil, errors.New("extractor can't be nil")
 	}
 
 	return &Exporter{
-		Config: config,
+		Config:    config,
+		Connector: connector,
+		Extractor: extractor,
 	}, nil
 }
 
@@ -62,14 +64,10 @@ func (xp *Exporter) Stop(done chan os.Signal) {
 }
 
 func (xp *Exporter) CloseConnector() error {
-	return xp.Connector().Close()
+	return xp.Connector.Close()
 }
 
-func (xp *Exporter) Connector() Connector {
-	return xp.Config.Connector
-}
-
-func (xp *Exporter) Scan() {
+func (xp *Exporter) Run(collected chan string) {
 	ticker := time.NewTicker(time.Duration(xp.Config.ScanInterval) * time.Second)
 	go func() {
 		defer ticker.Stop()
@@ -102,14 +100,15 @@ func (xp *Exporter) Scan() {
 				}
 
 				//TODO Implement RedisQueueMetricsFormatter to output metrics
-				log.Println(strings.Replace(q.Name(), fmt.Sprintf("%s:", QUEUE_ROOT_NODE), "", 1), q.GetCurrentJobsCount())
+				metric := fmt.Sprintf("%s %d", q.Name(), q.GetCurrentJobsCount())
+				collected <- metric
 			}
 		}
 	}()
 }
 
 func (xp *Exporter) CountJobsForQueues(queues []*RedisQueue) error {
-	return xp.Extractor().CountJobsForQueues(queues)
+	return xp.Extractor.CountJobsForQueues(queues)
 }
 
 func (xp *Exporter) SelectQueuesToScan() ([]*RedisQueue, error) {
@@ -119,7 +118,7 @@ func (xp *Exporter) SelectQueuesToScan() ([]*RedisQueue, error) {
 	if len(xp.Config.QueueNames) > 0 {
 		queueItems = parsedQueuesNames(xp.Config.QueueNames)
 	} else {
-		queueItems, err = xp.Extractor().ListAllQueuesFromDB()
+		queueItems, err = xp.Extractor.ListAllQueuesFromDB()
 	}
 
 	return queueItems, err
@@ -136,9 +135,5 @@ func parsedQueuesNames(queueNames string) []*RedisQueue {
 }
 
 func (xp *Exporter) SetQueuesType(queues []*RedisQueue) {
-	xp.Extractor().SetQueueTypeForQueues(queues)
-}
-
-func (xp *Exporter) Extractor() Extractor {
-	return xp.Config.Extractor
+	xp.Extractor.SetQueueTypeForQueues(queues)
 }

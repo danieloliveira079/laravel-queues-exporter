@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/exporter/redis"
 	"log"
 	"os"
@@ -47,19 +48,20 @@ func main() {
 		ConnectionConfig: connectionConfig,
 		QueueNames:       config.queuesNames,
 		ScanInterval:     config.scanInterval,
-		Connector:        connector,
-		Extractor:        extractor,
 	}
-	exporter, err := redis.NewRedisExporter(exporterConfig)
+	exporter, err := redis.NewRedisExporter(exporterConfig, connector, extractor)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	exporter.Scan()
+	collected := make(chan string)
+	exporter.Run(collected)
 
 	for {
 		select {
+		case forwardChan := <-collected:
+			fmt.Println(forwardChan)
 		case signalReceived := <-signals:
 			switch signalReceived {
 			case syscall.SIGTERM:

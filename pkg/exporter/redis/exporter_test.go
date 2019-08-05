@@ -61,12 +61,9 @@ func Test_Exporter_ShouldReturnAllQueuesFromDB(t *testing.T) {
 		QueuesOnDB: []string{"queue1", "queue2", "queue3"},
 	}
 	connector := &FakeRedisConnector{}
-	config := ExporterConfig{
-		Extractor: extractor,
-		Connector: connector,
-	}
+	config := ExporterConfig{}
 
-	exporter, _ := NewRedisExporter(config)
+	exporter, _ := NewRedisExporter(config, connector, extractor)
 
 	actual := func(queueItems []*RedisQueue) string {
 		var names []string
@@ -125,12 +122,9 @@ func Test_Exporter_ShouldReturnAllQueuesFromDB(t *testing.T) {
 func Test_Exporter_ShouldSelectFilteredQueuesFromDB(t *testing.T) {
 	extractor := &FakeRedisExtractor{}
 	connector := &FakeRedisConnector{}
-	config := ExporterConfig{
-		Extractor: extractor,
-		Connector: connector,
-	}
+	config := ExporterConfig{}
 
-	exporter, _ := NewRedisExporter(config)
+	exporter, _ := NewRedisExporter(config, connector, extractor)
 
 	actual := func(queueItems []*RedisQueue) string {
 		var names []string
@@ -207,7 +201,7 @@ func Test_Exporter_ShouldSelectFilteredQueuesFromDB(t *testing.T) {
 
 func Test_Exporter_ShouldReturnLaravelQueueNameForGivenQueueName(t *testing.T) {
 	nameWithRootNode := func(name string) string {
-		return fmt.Sprintf("%s:%s", QUEUE_ROOT_NODE, name)
+		return fmt.Sprintf("%s:%s", LARAVEL_QUEUE_ROOT_NODE, name)
 	}
 
 	testCases := []struct {
@@ -267,7 +261,7 @@ func Test_Exporter_ShouldReturnLaravelQueueNameForGivenQueueName(t *testing.T) {
 					Name: nameWithRootNode(":"),
 				},
 			},
-			expected: QUEUE_ROOT_NODE,
+			expected: LARAVEL_QUEUE_ROOT_NODE,
 		},
 		{
 			desc: "RedisQueue name has not parent node",
@@ -282,7 +276,7 @@ func Test_Exporter_ShouldReturnLaravelQueueNameForGivenQueueName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			name := tc.queueItem.ToLaravel()
+			name := tc.queueItem.FullName()
 			require.Equal(t, tc.expected, name)
 		})
 	}
