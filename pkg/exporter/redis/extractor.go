@@ -57,34 +57,40 @@ func (xt *RedisExtractor) Dispatcher() CommandDispatcher {
 	return xt.Config.Dispatcher
 }
 
-func (xt *RedisExtractor) CountJobsForQueue(queue *RedisQueue) error {
-	queueName := queue.LaravelQueueName()
+func (xt *RedisExtractor) CountJobsForQueues(queues []*RedisQueue) error {
+	var err error
 
-	var jobsCount int64
-	cmdName := xt.CountJobsCmdNameByQueueType(queue.GetQueueType())
+	for _, q := range queues {
+		queueName := q.ToLaravel()
 
-	//TODO Implement a parser instead of using package directly
-	jobsCount, err := redis.Int64(xt.Dispatcher().Do(cmdName, queueName))
-	if err != nil {
-		return err
+		var jobsCount int64
+		cmdName := xt.CountJobsCmdNameByQueueType(q.GetQueueType())
+
+		//TODO Implement a parser instead of using package directly
+		jobsCount, err := redis.Int64(xt.Dispatcher().Do(cmdName, queueName))
+		if err != nil {
+			return err
+		}
+
+		q.SetCurrentJobsCount(jobsCount)
 	}
 
-	queue.SetCurrentJobsCount(jobsCount)
 	return err
 }
 
 func (xt *RedisExtractor) SetQueueTypeForQueues(queues []*RedisQueue) {
-	for i, queue := range queues {
-		queueType, err := redis.String(xt.Dispatcher().Do("type", queue.Name()))
+	for i, q := range queues {
+		queueType, err := redis.String(xt.Dispatcher().Do("type", q.Name()))
 
 		if err != nil {
-			log.Printf("error: type could not defined for queue %s", queue.Name())
+			log.Printf("error: type could not be defined for queue %s", q.Name())
 		}
 
 		queues[i].SetQueueType(queueType)
 	}
 }
 
+//TODO ImplementCountJobs extrctor per queue type
 func (xt *RedisExtractor) CountJobsCmdNameByQueueType(queueType string) string {
 	var cmd string
 

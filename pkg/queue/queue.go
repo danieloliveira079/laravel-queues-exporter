@@ -2,7 +2,6 @@ package queue
 
 type QueueItem struct {
 	Name string
-	Type string
 	Jobs int64
 }
 
