@@ -11,6 +11,7 @@ const (
 
 type RedisQueue struct {
 	queueItem *queue.QueueItem
+	queueType string
 }
 
 func (q *RedisQueue) Name() string {
@@ -18,11 +19,11 @@ func (q *RedisQueue) Name() string {
 }
 
 func (q *RedisQueue) GetQueueType() string {
-	return q.queueItem.Type
+	return q.queueType
 }
 
 func (q *RedisQueue) SetQueueType(queueType string) {
-	q.queueItem.Type = queueType
+	q.queueType = queueType
 }
 
 func (q *RedisQueue) GetCurrentJobsCount() int64 {
@@ -33,15 +34,11 @@ func (q *RedisQueue) SetCurrentJobsCount(count int64) {
 	q.queueItem.Jobs = count
 }
 
-func (q *RedisQueue) LaravelQueueName() string {
+func (q *RedisQueue) ToLaravel() string {
 	var laravelName string
 
-	if q.queueItem == nil {
+	if q.queueItem == nil || q.queueItem.HasQueueName() == false {
 		return laravelName
-	}
-
-	if q.queueItem.HasQueueName() == false {
-		return q.queueItem.Name
 	}
 
 	parts, partsCount := q.laravelQueueNameSplit()
