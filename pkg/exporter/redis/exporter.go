@@ -13,6 +13,7 @@ import (
 type Exporter struct {
 	Config        ExporterConfig
 	interruptScan bool
+	Queues        []*RedisQueue
 }
 
 type ExporterConfig struct {
@@ -25,7 +26,7 @@ type ExporterConfig struct {
 
 type Extractor interface {
 	ListAllQueuesFromDB() ([]*RedisQueue, error)
-	CountJobsForQueue(queue *RedisQueue) error
+	CountJobsForQueues(queue []*RedisQueue) error
 	SetQueueTypeForQueues(queues []*RedisQueue)
 }
 
@@ -82,28 +83,33 @@ func (xp *Exporter) Scan() {
 			}
 
 			queues, err := xp.SelectQueuesToScan()
-			xp.SetQueuesType(queues)
-
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			for _, queue := range queues {
-				err = xp.CountJobsForQueue(queue)
+			xp.SetQueuesType(queues)
+			xp.Queues = queues
+
+			err = xp.CountJobsForQueues(xp.Queues)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for _, q := range xp.Queues {
 				if err != nil {
-					log.Println(fmt.Sprintf("error getting metrics for %s: %v", queue.queueItem.Name, err))
+					log.Println(fmt.Sprintf("error getting metrics for %s: %v", q.Name(), err))
 					continue
 				}
 
 				//TODO Implement RedisQueueMetricsFormatter to output metrics
-				log.Println(strings.Replace(queue.Name(), fmt.Sprintf("%s:", QUEUE_ROOT_NODE), "", 1), queue.GetCurrentJobsCount())
+				log.Println(strings.Replace(q.Name(), fmt.Sprintf("%s:", QUEUE_ROOT_NODE), "", 1), q.GetCurrentJobsCount())
 			}
 		}
 	}()
 }
 
-func (xp *Exporter) CountJobsForQueue(queue *RedisQueue) error {
-	return xp.Extractor().CountJobsForQueue(queue)
+func (xp *Exporter) CountJobsForQueues(queues []*RedisQueue) error {
+	return xp.Extractor().CountJobsForQueues(queues)
 }
 
 func (xp *Exporter) SelectQueuesToScan() ([]*RedisQueue, error) {

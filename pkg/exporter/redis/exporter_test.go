@@ -33,7 +33,7 @@ func (f *FakeRedisExtractor) ListAllQueuesFromDB() (queueItems []*RedisQueue, er
 	return queueItems, err
 }
 
-func (f *FakeRedisExtractor) CountJobsForQueue(queue *RedisQueue) error {
+func (f *FakeRedisExtractor) CountJobsForQueues(queue []*RedisQueue) error {
 	panic("implement me")
 }
 
@@ -282,7 +282,7 @@ func Test_Exporter_ShouldReturnLaravelQueueNameForGivenQueueName(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			name := tc.queueItem.LaravelQueueName()
+			name := tc.queueItem.ToLaravel()
 			require.Equal(t, tc.expected, name)
 		})
 	}
