@@ -80,10 +80,10 @@ func (xt *RedisExtractor) CountJobsForQueues(queues []*RedisQueue) error {
 
 func (xt *RedisExtractor) SetQueueTypeForQueues(queues []*RedisQueue) {
 	for i, q := range queues {
-		queueType, err := redis.String(xt.Dispatcher().Do("type", q.Name()))
+		queueType, err := redis.String(xt.Dispatcher().Do("type", q.FullName()))
 
 		if err != nil {
-			log.Printf("error: type could not be defined for queue %s", q.Name())
+			log.Printf("error: type could not be defined for queue %s", q.FullName())
 		}
 
 		queues[i].SetQueueType(queueType)
