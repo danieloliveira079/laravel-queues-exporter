@@ -178,15 +178,15 @@ func Test_RedisExtractor_GivenQueueItemsShouldSetQueueType(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			for _, q := range tc.queues {
 				args := []interface{}{
-					q.Name(),
+					q.FullName(),
 				}
-				queueType := tc.expected[q.Name()]
+				queueType := tc.expected[q.FullName()]
 				dispatcher.On("Do", cmd, args).Return(queueType).Once()
 			}
 
 			extractor.SetQueueTypeForQueues(tc.queues)
 			for _, q := range tc.queues {
-				assert.Equal(t, q.GetQueueType(), tc.expected[q.Name()])
+				assert.Equal(t, q.GetQueueType(), tc.expected[q.FullName()])
 			}
 		})
 	}
