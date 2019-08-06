@@ -19,11 +19,7 @@ func (d *FakeDispatcher) Do(command string, args ...interface{}) (reply interfac
 }
 
 func Test_Extractor_ShouldNotCreateNewRedisExtractorWithNilDispatcher(t *testing.T) {
-	config := ExtractorConfig{
-		Dispatcher: nil,
-	}
-
-	extractor, err := NewRedisExtractor(config)
+	extractor, err := NewRedisExtractor(nil)
 	require.Nil(t, extractor)
 	require.Error(t, err)
 }
@@ -31,11 +27,7 @@ func Test_Extractor_ShouldNotCreateNewRedisExtractorWithNilDispatcher(t *testing
 func Test_Extractor_ShouldCreateNewRedisExtractorWithDispatcher(t *testing.T) {
 	dispatcher := &FakeDispatcher{}
 
-	config := ExtractorConfig{
-		Dispatcher: dispatcher,
-	}
-
-	extractor, err := NewRedisExtractor(config)
+	extractor, err := NewRedisExtractor(dispatcher)
 	require.NotNil(t, extractor)
 	require.Nil(t, err)
 }
@@ -76,11 +68,7 @@ func Test_RedisExtractor_ShouldListAllQueuesFromDB(t *testing.T) {
 
 	dispatcher.On("Do", cmd, args).Return(queuesFromDB)
 
-	config := ExtractorConfig{
-		Dispatcher: dispatcher,
-	}
-
-	extractor, err := NewRedisExtractor(config)
+	extractor, err := NewRedisExtractor(dispatcher)
 	require.Nil(t, err)
 
 	queueItems, err := extractor.ListAllQueuesFromDB()
@@ -91,11 +79,7 @@ func Test_RedisExtractor_ShouldListAllQueuesFromDB(t *testing.T) {
 func Test_RedisExtractor_ShouldReturnCountJobCommandNameByQueueType(t *testing.T) {
 	dispatcher := new(FakeDispatcher)
 
-	config := ExtractorConfig{
-		Dispatcher: dispatcher,
-	}
-
-	extractor, err := NewRedisExtractor(config)
+	extractor, err := NewRedisExtractor(dispatcher)
 	require.Nil(t, err)
 
 	testCases := []struct {
@@ -133,11 +117,7 @@ func Test_RedisExtractor_GivenQueueItemsShouldSetQueueType(t *testing.T) {
 	dispatcher := new(FakeDispatcher)
 	cmd := "type"
 
-	config := ExtractorConfig{
-		Dispatcher: dispatcher,
-	}
-
-	extractor, err := NewRedisExtractor(config)
+	extractor, err := NewRedisExtractor(dispatcher)
 	require.Nil(t, err)
 
 	testCases := []struct {
