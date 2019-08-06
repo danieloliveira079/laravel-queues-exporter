@@ -1,0 +1,18 @@
+version: "3.7"
+services:
+  redis:
+    image: redis:5.0-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: always
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    restart: always
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOSTS: "host.docker.internal"
