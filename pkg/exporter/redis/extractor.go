@@ -9,22 +9,18 @@ import (
 )
 
 type RedisExtractor struct {
-	Config ExtractorConfig
-}
-
-type ExtractorConfig struct {
-	Dispatcher CommandDispatcher
+	dispatcher CommandDispatcher
 }
 
 type CommandDispatcher interface {
 	Do(command string, args ...interface{}) (reply interface{}, err error)
 }
 
-func NewRedisExtractor(config ExtractorConfig) (*RedisExtractor, error) {
-	if config.Dispatcher == nil {
+func NewRedisExtractor(dispatcher CommandDispatcher) (*RedisExtractor, error) {
+	if dispatcher == nil {
 		return nil, errors.New("dispatcher can't be nil")
 	}
-	return &RedisExtractor{Config: config}, nil
+	return &RedisExtractor{dispatcher: dispatcher}, nil
 }
 
 func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*RedisQueue, error) {
@@ -54,7 +50,7 @@ func (xt *RedisExtractor) ListAllQueuesFromDB() ([]*RedisQueue, error) {
 }
 
 func (xt *RedisExtractor) Dispatcher() CommandDispatcher {
-	return xt.Config.Dispatcher
+	return xt.dispatcher
 }
 
 func (xt *RedisExtractor) CountJobsForQueues(queues []*RedisQueue) error {

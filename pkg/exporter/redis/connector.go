@@ -16,8 +16,12 @@ type ConnectorConfig struct {
 	ConnConfig ConnectionConfig
 }
 
-func NewRedisConnector(config ConnectorConfig) (*RedisConnector, error) {
-	return &RedisConnector{Config: config}, nil
+func NewRedisConnector(connectionConfig ConnectionConfig) (*RedisConnector, error) {
+	return &RedisConnector{
+		Config: ConnectorConfig{
+			ConnConfig: connectionConfig,
+		},
+	}, nil
 }
 
 func (c *RedisConnector) Connect() (err error) {
