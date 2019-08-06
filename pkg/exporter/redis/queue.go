@@ -19,22 +19,6 @@ func (q *RedisQueue) Name() string {
 	return strings.Replace(q.queueItem.Name, fmt.Sprintf("%s:", LARAVEL_QUEUE_ROOT_NODE), "", 1)
 }
 
-func (q *RedisQueue) GetQueueType() string {
-	return q.queueType
-}
-
-func (q *RedisQueue) SetQueueType(queueType string) {
-	q.queueType = queueType
-}
-
-func (q *RedisQueue) GetCurrentJobsCount() int64 {
-	return q.queueItem.Jobs
-}
-
-func (q *RedisQueue) SetCurrentJobsCount(count int64) {
-	q.queueItem.Jobs = count
-}
-
 func (q *RedisQueue) FullName() string {
 	var laravelName string
 
@@ -62,6 +46,22 @@ func (q *RedisQueue) FullName() string {
 	}
 
 	return laravelName
+}
+
+func (q *RedisQueue) GetQueueType() string {
+	return q.queueType
+}
+
+func (q *RedisQueue) SetQueueType(queueType string) {
+	q.queueType = queueType
+}
+
+func (q *RedisQueue) GetCurrentJobsCount() int64 {
+	return q.queueItem.Jobs
+}
+
+func (q *RedisQueue) SetCurrentJobsCount(count int64) {
+	q.queueItem.Jobs = count
 }
 
 func (q *RedisQueue) laravelQueueNameSplit() ([]string, int) {
