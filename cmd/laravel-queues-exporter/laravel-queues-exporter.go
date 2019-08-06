@@ -15,6 +15,7 @@ type Forwarder interface {
 	Forward(metrics []metric.Metric)
 }
 
+//TODO Extract exporter and dependencies initialisation from main()
 func main() {
 	getConfig()
 
