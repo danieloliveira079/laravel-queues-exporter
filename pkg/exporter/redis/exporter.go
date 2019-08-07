@@ -11,7 +11,7 @@ import (
 )
 
 type Exporter struct {
-	Config           ExporterConfig
+	Config           *ExporterConfig
 	Extractor        Extractor
 	Connector        Connector
 	Queues           []*RedisQueue
@@ -19,7 +19,7 @@ type Exporter struct {
 }
 
 type ExporterConfig struct {
-	ConnectionConfig ConnectionConfig
+	ConnectionConfig *ConnectionConfig
 	CollectInterval  int
 	QueueNames       string
 }
@@ -36,7 +36,7 @@ type Connector interface {
 	Do(command string, args ...interface{}) (results interface{}, err error)
 }
 
-func NewRedisExporter(config ExporterConfig, connector Connector, extractor Extractor) (*Exporter, error) {
+func NewRedisExporter(config *ExporterConfig, connector Connector, extractor Extractor) (*Exporter, error) {
 	if connector == nil {
 		return nil, errors.New("connector can't be nil")
 	}

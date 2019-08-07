@@ -8,17 +8,17 @@ import (
 )
 
 type RedisConnector struct {
-	Config ConnectorConfig
+	Config *ConnectorConfig
 	conn   redis.Conn
 }
 
 type ConnectorConfig struct {
-	ConnConfig ConnectionConfig
+	ConnConfig *ConnectionConfig
 }
 
-func NewRedisConnector(connectionConfig ConnectionConfig) (*RedisConnector, error) {
+func NewRedisConnector(connectionConfig *ConnectionConfig) (*RedisConnector, error) {
 	return &RedisConnector{
-		Config: ConnectorConfig{
+		Config: &ConnectorConfig{
 			ConnConfig: connectionConfig,
 		},
 	}, nil
