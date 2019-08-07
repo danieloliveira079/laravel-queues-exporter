@@ -61,7 +61,7 @@ func Test_Exporter_ShouldReturnAllQueuesFromDB(t *testing.T) {
 		QueuesOnDB: []string{"queue1", "queue2", "queue3"},
 	}
 	connector := &FakeRedisConnector{}
-	config := ExporterConfig{}
+	config := &ExporterConfig{}
 
 	exporter, _ := NewRedisExporter(config, connector, extractor)
 
@@ -122,7 +122,7 @@ func Test_Exporter_ShouldReturnAllQueuesFromDB(t *testing.T) {
 func Test_Exporter_ShouldSelectFilteredQueuesFromDB(t *testing.T) {
 	extractor := &FakeRedisExtractor{}
 	connector := &FakeRedisConnector{}
-	config := ExporterConfig{}
+	config := &ExporterConfig{}
 
 	exporter, _ := NewRedisExporter(config, connector, extractor)
 
@@ -182,7 +182,7 @@ func Test_Exporter_ShouldSelectFilteredQueuesFromDB(t *testing.T) {
 			remoteQueues:        []string{"queue1", "queue2", "queue3", "queue5"},
 			queuesFromConfig:    "queue1,queue2,queue3,queue4",
 			validateQueuesMatch: configMatchesSelected,
-			expected:            false,
+			expected:            true,
 		},
 	}
 

@@ -5,7 +5,8 @@ import "github.com/danieloliveira079/laravel-queues-exporter/pkg/config"
 type RedisExporterBuilder struct {
 }
 
-func (b *RedisExporterBuilder) Build(appConfig config.AppConfig) (*Exporter, error) {
+//TODO Create tests for Builder
+func (b *RedisExporterBuilder) Build(appConfig *config.AppConfig) (*Exporter, error) {
 	connectionConfig := createRedisConnectionConfig(appConfig)
 	connector, err := createRedisConnector(connectionConfig)
 	if err != nil {
@@ -27,15 +28,15 @@ func (b *RedisExporterBuilder) Build(appConfig config.AppConfig) (*Exporter, err
 	return NewRedisExporter(exporterConfig, connector, extractor)
 }
 
-func createRedisConnectionConfig(appConfig config.AppConfig) ConnectionConfig {
-	return ConnectionConfig{
+func createRedisConnectionConfig(appConfig *config.AppConfig) *ConnectionConfig {
+	return &ConnectionConfig{
 		Host: appConfig.RedisHost,
 		Port: appConfig.RedisPort,
 		DB:   appConfig.RedisDB,
 	}
 }
 
-func createRedisConnector(connectionConfig ConnectionConfig) (Connector, error) {
+func createRedisConnector(connectionConfig *ConnectionConfig) (Connector, error) {
 	return NewRedisConnector(connectionConfig)
 }
 
@@ -47,8 +48,8 @@ func createRedisExtractor(dispatcher CommandDispatcher) (Extractor, error) {
 	return NewRedisExtractor(dispatcher)
 }
 
-func createRedisExporterConfig(appConfig config.AppConfig, connectionConfig ConnectionConfig) ExporterConfig {
-	return ExporterConfig{
+func createRedisExporterConfig(appConfig *config.AppConfig, connectionConfig *ConnectionConfig) *ExporterConfig {
+	return &ExporterConfig{
 		QueueNames:       appConfig.QueuesNames,
 		CollectInterval:  appConfig.CollectInterval,
 		ConnectionConfig: connectionConfig,

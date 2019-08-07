@@ -65,7 +65,7 @@ func main() {
 	}
 }
 
-func getConfig() config.AppConfig {
+func getConfig() *config.AppConfig {
 	var appConfig config.AppConfig
 
 	flag.StringVar(&appConfig.RedisHost, "redis-host", config.GetEnv("REDIS_HOST", "127.0.0.1"), "Redis host where queues are stored")
@@ -78,5 +78,5 @@ func getConfig() config.AppConfig {
 	flag.StringVar(&appConfig.QueuesNames, "queues-names", config.GetEnv("QUEUES_NAMES", ""), "Names of the queues to be scanned separated by comma. I.e: queue1,queue2")
 
 	flag.Parse()
-	return appConfig
+	return &appConfig
 }
