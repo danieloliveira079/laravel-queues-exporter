@@ -1,4 +1,4 @@
-package forwarder
+package consumer
 
 import (
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
@@ -8,7 +8,7 @@ import (
 type Log struct {
 }
 
-func (s *Log) Forward(metrics []metric.Metric) {
+func (l *Log) Process(metrics []metric.Metric) {
 	for _, m := range metrics {
 		log.Printf("%s %v", m.Name, m.Value)
 	}

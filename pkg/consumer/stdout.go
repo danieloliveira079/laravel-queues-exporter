@@ -1,4 +1,4 @@
-package forwarder
+package consumer
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 type Stdout struct {
 }
 
-func (s *Stdout) Forward(metrics []metric.Metric) {
+func (s *Stdout) Process(metrics []metric.Metric) {
 	for _, m := range metrics {
 		fmt.Println(m.Name, m.Value)
 	}
