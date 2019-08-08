@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/config"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/exporter/redis"
-	"github.com/danieloliveira079/laravel-queues-exporter/pkg/forwarder"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/publisher"
 	"log"
 	"os"
 	"os/signal"
@@ -13,13 +14,15 @@ import (
 	"syscall"
 )
 
-type Forwarder interface {
-	Forward(metrics []metric.Metric)
+type Publisher interface {
+	SubscribeConsumers(consumer ...consumer.Consumer)
+	Publish(metrics []metric.Metric)
 }
 
 type Exporter interface {
 	Run(collected chan []metric.Metric)
 }
+
 type ExporterBuilder interface {
 	Build(appConfig config.AppConfig) (Exporter, error)
 }
@@ -37,21 +40,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	collected := make(chan []metric.Metric)
+	collected := make(chan []metric.Metric, 100)
 	exporter.Run(collected)
 
-	forwarders := []Forwarder{
-		&forwarder.Stdout{},
-		&forwarder.Log{},
-	}
+	metricsPublisher := new(publisher.MetricsPublisher)
+	stdoutConsumer := new(consumer.Stdout)
+	logConsumer := new(consumer.Log)
+	metricsPublisher.SubscribeConsumers(stdoutConsumer, logConsumer)
 
 	for {
 		select {
 		case metrics := <-collected:
-			//TODO abstract forwarder and use concurrency
-			for _, f := range forwarders {
-				f.Forward(metrics)
-			}
+			metricsPublisher.Publish(metrics)
 		case signalReceived := <-signals:
 			switch signalReceived {
 			case syscall.SIGTERM:
