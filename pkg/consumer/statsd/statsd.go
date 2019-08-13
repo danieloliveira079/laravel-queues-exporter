@@ -12,25 +12,30 @@ type StatsD struct {
 	host          string
 	port          string
 	metricsPrefix string
+	client        *statsd.Client
 }
 
-func New(config *config.AppConfig) *StatsD {
+func New(config *config.AppConfig) (*StatsD, error) {
+	client, err := statsd.New(fmt.Sprintf("%s:%s", config.StatsDHost, config.StatsDPort))
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	return &StatsD{
 		host:          config.StatsDHost,
 		port:          config.StatsDPort,
 		metricsPrefix: config.MetricsPrefix,
-	}
+		client:        client,
+	}, nil
 }
 
 func (s *StatsD) Process(metrics []metric.Metric) {
-	client, err := statsd.New(fmt.Sprintf("%s:%s", s.host, s.port))
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
 	for _, metric := range metrics {
-		err = client.Gauge(metric.WithPrefix(s.metricsPrefix), metric.ValueToFloat64(), []string{}, 1)
+		err := s.client.Gauge(metric.WithPrefix(s.metricsPrefix), metric.ValueToFloat64(), []string{}, 1)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }

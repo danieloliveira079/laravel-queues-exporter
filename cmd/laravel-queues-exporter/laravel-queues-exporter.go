@@ -45,9 +45,13 @@ func main() {
 	collected := make(chan []metric.Metric, 100)
 	exporter.Run(collected)
 
-	metricsPublisher := new(publisher.MetricsPublisher)
 	stdoutConsumer := stdout.New()
-	statsdConsumer := statsd.New(appConfig)
+	statsdConsumer, err := statsd.New(appConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	metricsPublisher := new(publisher.MetricsPublisher)
 	metricsPublisher.SubscribeConsumers(stdoutConsumer, statsdConsumer)
 
 	for {
