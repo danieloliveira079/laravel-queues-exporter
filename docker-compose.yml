@@ -11,8 +11,21 @@ services:
     container_name: redis-commander
     ports:
       - "8081:8081"
+    volumes:
+      - redis-data:/data
     restart: always
     depends_on:
       - redis
     environment:
       REDIS_HOSTS: "host.docker.internal"
+  statsd:
+    image: statsd/statsd
+    container_name: statsd
+    ports:
+      - 8125:8125/udp
+    restart: always
+    volumes:
+      - ./hack/config.js:/usr/src/app/config.js
+
+volumes:
+  redis-data:
