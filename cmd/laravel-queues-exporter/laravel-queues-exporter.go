@@ -4,6 +4,8 @@ import (
 	"flag"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/config"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer/statsd"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer/stdout"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/exporter/redis"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/publisher"
@@ -44,9 +46,9 @@ func main() {
 	exporter.Run(collected)
 
 	metricsPublisher := new(publisher.MetricsPublisher)
-	stdoutConsumer := new(consumer.Stdout)
-	logConsumer := new(consumer.Log)
-	metricsPublisher.SubscribeConsumers(stdoutConsumer, logConsumer)
+	stdoutConsumer := stdout.New()
+	statsdConsumer := statsd.New(appConfig)
+	metricsPublisher.SubscribeConsumers(stdoutConsumer, statsdConsumer)
 
 	for {
 		select {
@@ -71,7 +73,7 @@ func getConfig() *config.AppConfig {
 	flag.StringVar(&appConfig.RedisHost, "redis-host", config.GetEnv("REDIS_HOST", "127.0.0.1"), "Redis host where queues are stored")
 	flag.StringVar(&appConfig.RedisPort, "redis-port", config.GetEnv("REDIS_PORT", "6379"), "Redis target port open for connections")
 	flag.IntVar(&appConfig.RedisDB, "redis-db", config.GetEnvInt("REDIS_DB", 0), "Redis DB used by Laravel")
-	flag.StringVar(&appConfig.StatsDHost, "statsd-host", config.GetEnv("STATSD_HOST", "127.0.0.1"), "StatsD target to where metrics must be sent")
+	flag.StringVar(&appConfig.StatsDHost, "statsd-host", config.GetEnv("STATSD_HOST", "0.0.0.0"), "StatsD target to where metrics must be sent")
 	flag.StringVar(&appConfig.StatsDPort, "statsd-port", config.GetEnv("STATSD_PORT", "8125"), "StatsD target port open for connections")
 	flag.StringVar(&appConfig.MetricsPrefix, "metrics-prefix", config.GetEnv("METRICS_PREFIX", "exporter"), "Prefix to be added to every metric")
 	flag.IntVar(&appConfig.CollectInterval, "collect-interval", config.GetEnvInt("SCAN_INTERVAL", 60), "Interval in seconds between each metrics collect")

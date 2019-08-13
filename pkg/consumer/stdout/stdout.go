@@ -1,4 +1,4 @@
-package consumer
+package stdout
 
 import (
 	"fmt"
@@ -6,6 +6,10 @@ import (
 )
 
 type Stdout struct {
+}
+
+func New() *Stdout {
+	return new(Stdout)
 }
 
 func (s *Stdout) Process(metrics []metric.Metric) {

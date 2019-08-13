@@ -1,4 +1,4 @@
-package consumer
+package log
 
 import (
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
