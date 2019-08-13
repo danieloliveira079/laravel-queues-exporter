@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/DataDog/datadog-go"
+  packages = ["statsd"]
+  revision = "8a13fa761f51039f900738876f2837198fba804f"
+  version = "v2.2.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
@@ -41,6 +47,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d87170fa02c500498978db289bc48281e6747acd86e253ab94e3650699fa66dc"
+  inputs-digest = "79e7b66e8afb85e45e96d2ca10486893e3234a05cbdaebf964404a63f2624a51"
   solver-name = "gps-cdcl"
   solver-version = 1
