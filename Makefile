@@ -1,3 +1,6 @@
+test:
+	go test -v -cover ./...
+
 build:
 	@echo "=============building Local Exporter============="
 	docker build -t laravel-queues-exporter .
@@ -11,9 +14,6 @@ logs:
 
 down:
 	docker-compose down
-
-test:
-	go test -v -cover ./...
 
 clean: down
 	@echo "=============cleaning up============="
