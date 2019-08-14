@@ -80,9 +80,10 @@ func getConfig() *config.AppConfig {
 	flag.StringVar(&appConfig.StatsDHost, "statsd-host", config.GetEnv("STATSD_HOST", "0.0.0.0"), "StatsD target to where metrics must be sent")
 	flag.StringVar(&appConfig.StatsDPort, "statsd-port", config.GetEnv("STATSD_PORT", "8125"), "StatsD target port open for connections")
 	flag.StringVar(&appConfig.MetricsPrefix, "metrics-prefix", config.GetEnv("METRICS_PREFIX", "exporter"), "Prefix to be added to every metric")
-	flag.IntVar(&appConfig.CollectInterval, "collect-interval", config.GetEnvInt("SCAN_INTERVAL", 60), "Interval in seconds between each metrics collect")
+	flag.IntVar(&appConfig.CollectInterval, "collect-interval", config.GetEnvInt("COLLECT_INTERVAL", 60), "Interval in seconds between each metrics collect")
 	flag.StringVar(&appConfig.QueuesNames, "queues-names", config.GetEnv("QUEUES_NAMES", ""), "Names of the queues to be scanned separated by comma. I.e: queue1,queue2")
 
 	flag.Parse()
+	log.Println(appConfig)
 	return &appConfig
 }
