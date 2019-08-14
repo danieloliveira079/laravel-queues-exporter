@@ -1,5 +1,15 @@
 version: "3.7"
 services:
+  exporter:
+    build: .
+    container_name: exporter
+    restart: always
+    command:
+      - "--redis-host=redis"
+      - "--statsd-host=statsd"
+      - "--collect-interval=2"
+    depends_on:
+      - redis
   redis:
     image: redis:5.0-alpine
     container_name: redis
