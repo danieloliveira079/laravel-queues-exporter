@@ -95,7 +95,7 @@ make test
 
 ## Roadmap
 
-Prometheus Scrapping
-HTTP Post
-GRPC
-DB
+- Prometheus Scrapping
+- HTTP Post
+- GRPC
+- DB
