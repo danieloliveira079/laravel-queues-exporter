@@ -13,10 +13,12 @@ type StatsD struct {
 	port          string
 	metricsPrefix string
 	client        *statsd.Client
+	//TODO add init message
 }
 
 func New(config *config.AppConfig) (*StatsD, error) {
-	client, err := statsd.New(fmt.Sprintf("%s:%s", config.StatsDHost, config.StatsDPort))
+	conn := fmt.Sprintf("%s:%s", config.StatsDHost, config.StatsDPort)
+	client, err := statsd.New(conn)
 
 	if err != nil {
 		log.Println(err)
