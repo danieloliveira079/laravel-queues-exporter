@@ -15,6 +15,7 @@ type AppConfig struct {
 	MetricsPrefix   string
 	CollectInterval int
 	QueuesNames     string
+	ExportTo        string
 }
 
 func GetEnv(key, fallback string) string {

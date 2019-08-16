@@ -4,8 +4,6 @@ import (
 	"flag"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/config"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer"
-	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer/statsd"
-	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer/stdout"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/exporter/redis"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/publisher"
@@ -45,14 +43,13 @@ func main() {
 	collected := make(chan []metric.Metric, 100)
 	exporter.Run(collected)
 
-	stdoutConsumer := stdout.New()
-	statsdConsumer, err := statsd.New(appConfig)
+	metricsPublisher := new(publisher.MetricsPublisher)
+	consumers, err := consumer.BuildConsumersListFromConfig(appConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	metricsPublisher := new(publisher.MetricsPublisher)
-	metricsPublisher.SubscribeConsumers(stdoutConsumer, statsdConsumer)
+	metricsPublisher.SubscribeConsumers(consumers...)
 
 	for {
 		select {
@@ -82,6 +79,7 @@ func getConfig() *config.AppConfig {
 	flag.StringVar(&appConfig.MetricsPrefix, "metrics-prefix", config.GetEnv("METRICS_PREFIX", "exporter"), "Prefix to be added to every metric")
 	flag.IntVar(&appConfig.CollectInterval, "collect-interval", config.GetEnvInt("COLLECT_INTERVAL", 60), "Interval in seconds between each metrics collect")
 	flag.StringVar(&appConfig.QueuesNames, "queues-names", config.GetEnv("QUEUES_NAMES", ""), "Names of the queues to be scanned separated by comma. I.e: queue1,queue2")
+	flag.StringVar(&appConfig.ExportTo, "export-to", config.GetEnv("EXPORT_TO", "statsd,stdout"), "List of consumers that will be notified when metrics are exported. Consumers must be separated by comma. I.e.: statsd,stdout")
 
 	flag.Parse()
 	log.Println(appConfig)
