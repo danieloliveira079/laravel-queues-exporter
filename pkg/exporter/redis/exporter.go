@@ -102,6 +102,11 @@ func (xp *Exporter) Collect() []metric.Metric {
 	}
 
 	metrics := []metric.Metric{}
+	if len(xp.Queues) == 0 {
+		emptyMetrics := make([]metric.Metric, 1)
+		return emptyMetrics
+	}
+
 	for _, q := range xp.Queues {
 		metrics = append(metrics, metric.Metric{
 			Name:  q.Name(),
