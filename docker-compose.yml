@@ -8,8 +8,11 @@ services:
       - "--redis-host=redis"
       - "--statsd-host=statsd"
       - "--collect-interval=2"
+      - "--grpc-enabled"
     depends_on:
       - redis
+    ports:
+      - "8001:8001"
   redis:
     image: redis:5.0-alpine
     container_name: redis
