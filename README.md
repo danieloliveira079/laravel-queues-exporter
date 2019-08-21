@@ -82,6 +82,7 @@ make up
 From another terminal session start the exportercli:
 
 ```bash
+#press q to exit the exportercli
 go run cmd/cli/main.go watch
 ```
 
