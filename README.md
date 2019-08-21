@@ -116,5 +116,7 @@ make test
 
 - Prometheus Scrapping
 - HTTP Post
-- GRPC
 - DB
+
+## References
+- Widgets: https://github.com/cjbassi/gotop
