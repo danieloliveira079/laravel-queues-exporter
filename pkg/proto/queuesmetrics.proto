@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+service QueuesMetrics{
+    rpc Get(Query) returns (Metrics) {}
+}
+
+message Query{
+    string queues = 1;
+}
+
+message Metrics{
+    repeated Metric Metric = 1;
+}
+
+message Metric {
+    string queue = 1;
+    int64 jobs = 2;
+}
