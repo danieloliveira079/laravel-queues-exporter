@@ -75,9 +75,16 @@ docker run -it --rm --name laravel-queues-exporter --network=host \
 
 You can run the exportercli running the following command:
 
+Start all services by running:
+```bash
+make up
+```
+From another terminal session start the exportercli:
+
 ```bash
 go run cmd/cli/main.go watch
 ```
+
 The output will be a list of all queues that currently have jobs. The dashboard will be actively updated.
 
 <img src="./assets/exportercli.gif" />
