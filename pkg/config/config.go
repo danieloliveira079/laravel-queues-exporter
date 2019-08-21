@@ -16,6 +16,8 @@ type AppConfig struct {
 	CollectInterval int
 	QueuesNames     string
 	ExportTo        string
+	GRPCAddress     string
+	GRPCEnabled     bool
 }
 
 func GetEnv(key, fallback string) string {

@@ -5,6 +5,7 @@ import (
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/config"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/consumer"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/exporter/redis"
+	"github.com/danieloliveira079/laravel-queues-exporter/pkg/grpc"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/metric"
 	"github.com/danieloliveira079/laravel-queues-exporter/pkg/publisher"
 	"log"
@@ -49,6 +50,17 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if appConfig.GRPCEnabled {
+		grpcServer := &grpc.ExporterServer{}
+		consumers = append(consumers, grpcServer)
+		go func() {
+			err = grpcServer.Start(appConfig.GRPCAddress)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}()
+	}
+
 	metricsPublisher.SubscribeConsumers(consumers...)
 
 	for {
@@ -80,6 +92,8 @@ func getConfig() *config.AppConfig {
 	flag.IntVar(&appConfig.CollectInterval, "collect-interval", config.GetEnvInt("COLLECT_INTERVAL", 60), "Interval in seconds between each metrics collect")
 	flag.StringVar(&appConfig.QueuesNames, "queues-names", config.GetEnv("QUEUES_NAMES", ""), "Names of the queues to be scanned separated by comma. I.e: queue1,queue2")
 	flag.StringVar(&appConfig.ExportTo, "export-to", config.GetEnv("EXPORT_TO", "statsd,stdout"), "List of consumers that will be notified when metrics are exported. Consumers must be separated by comma. I.e.: statsd,stdout")
+	flag.StringVar(&appConfig.GRPCAddress, "grpc-addr", config.GetEnv("GRPC_ADDR", ":8001"), "gRPC server address. Defaults to 0.0.0.0:8001")
+	flag.BoolVar(&appConfig.GRPCEnabled, "grpc-enabled", config.GetEnvBool("GRPC_ENABLED", false), "Start gRPC server. Defaults to false")
 
 	flag.Parse()
 	log.Println(appConfig)
