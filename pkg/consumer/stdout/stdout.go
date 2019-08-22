@@ -15,6 +15,8 @@ func New(config *config.AppConfig) (*Stdout, error) {
 
 func (s *Stdout) Process(metrics []metric.Metric) {
 	for _, m := range metrics {
-		fmt.Println(m.Name, m.Value)
+		if len(m.Name) > 0 {
+			fmt.Println(m.Name, m.Value)
+		}
 	}
 }
