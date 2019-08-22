@@ -2,3 +2,7 @@ language: go
 
 go:
   - "1.12.5"
+install: true
+script:
+  - env GO111MODULE=on go build ./...
+  - env GO111MODULE=on go test ./...
