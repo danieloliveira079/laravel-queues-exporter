@@ -34,10 +34,12 @@ func New(config *config.AppConfig) (*StatsD, error) {
 }
 
 func (s *StatsD) Process(metrics []metric.Metric) {
-	for _, metric := range metrics {
-		err := s.client.Gauge(metric.WithPrefix(s.metricsPrefix), metric.ValueToFloat64(), []string{}, 1)
-		if err != nil {
-			log.Println(err)
+	for _, m := range metrics {
+		if len(m.Name) > 0 {
+			err := s.client.Gauge(m.WithPrefix(s.metricsPrefix), m.ValueToFloat64(), []string{}, 1)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 	}
 }
