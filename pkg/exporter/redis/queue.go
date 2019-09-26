@@ -19,6 +19,10 @@ func (q *RedisQueue) Name() string {
 	return strings.Replace(q.queueItem.Name, fmt.Sprintf("%s:", LARAVEL_QUEUE_ROOT_NODE), "", 1)
 }
 
+/*
+TODO Rename this function to explain better its purpose. It should be represents the full queue name used by Laravel
+I.e.: queues:queue1 or queues:queue2:reserved
+*/
 func (q *RedisQueue) FullName() string {
 	var laravelName string
 
