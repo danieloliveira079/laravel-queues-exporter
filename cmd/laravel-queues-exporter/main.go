@@ -35,16 +35,6 @@ func main() {
 	signal.Notify(signals, syscall.SIGHUP, syscall.SIGUSR1, syscall.SIGUSR2, syscall.SIGINT)
 	done := make(chan os.Signal, 1)
 
-	redisExporterBuilder := new(redis.RedisExporterBuilder)
-	exporter, err := redisExporterBuilder.Build(appConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	collected := make(chan []metric.Metric, 100)
-	exporter.Run(collected)
-
-	metricsPublisher := new(publisher.MetricsPublisher)
 	consumers, err := consumer.BuildConsumersListFromConfig(appConfig)
 	if err != nil {
 		log.Fatal(err)
@@ -61,7 +51,17 @@ func main() {
 		}()
 	}
 
+	metricsPublisher := new(publisher.MetricsPublisher)
 	metricsPublisher.SubscribeConsumers(consumers...)
+
+	redisExporterBuilder := new(redis.RedisExporterBuilder)
+	exporter, err := redisExporterBuilder.Build(appConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	collected := make(chan []metric.Metric, 100)
+	exporter.Run(collected)
 
 	for {
 		select {

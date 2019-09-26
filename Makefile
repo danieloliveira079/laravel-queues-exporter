@@ -30,7 +30,7 @@ up:
 
 services:
 	@echo "=============starting local services============="
-	 docker-compose up redis statsd
+	 docker-compose up redis statsd redis-commander
 
 logs:
 	docker-compose logs -f

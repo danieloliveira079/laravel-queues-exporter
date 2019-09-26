@@ -13,7 +13,7 @@ func (b *RedisExporterBuilder) Build(appConfig *config.AppConfig) (*Exporter, er
 		return nil, err
 	}
 
-	dispatcher, err := createRedisDispatcher(connector)
+	dispatcher, err := createRedisCommandDispatcher(connector)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func createRedisConnector(connectionConfig *ConnectionConfig) (Connector, error)
 	return NewRedisConnector(connectionConfig)
 }
 
-func createRedisDispatcher(connector Connector) (CommandDispatcher, error) {
+func createRedisCommandDispatcher(connector Connector) (CommandDispatcher, error) {
 	return NewRedisCommandDispatcher(connector)
 }
 
